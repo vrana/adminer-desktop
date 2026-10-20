@@ -96,6 +96,10 @@ fills the cache under the token's own limit.
 There is no test suite and no linter. `php -l` on the six PHP files and a `php build.php` are the
 check, plus the HTTP check below for anything that changes the payload.
 
+A release follows each Adminer release: `build.php` for that version, a `v<VERSION>` tag here and a
+GitHub release with the three files, which www.adminer.org links. Rebuild the Linux PHP first when
+PHP had a release.
+
 ## Things that were found the hard way
 
 - **Windows ran the first exe as administrator.** The stub's version info says "7z Setup SFX" and
