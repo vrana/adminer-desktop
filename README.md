@@ -1,8 +1,8 @@
-# Adminer for Windows and Linux
+# Adminer for Windows, Linux and macOS
 
 [Adminer](https://www.adminer.org/) with its own PHP, for people who don't have PHP or don't want
 to set up a web server: one `adminer.exe` of about 7 MB for Windows, a `.tar.xz` of about 5 MB for
-Linux. Start it and Adminer opens in your browser.
+Linux, an `Adminer.app` in a 15 MB `.zip` for macOS. Start it and Adminer opens in your browser.
 
 ## Run on Windows
 
@@ -30,6 +30,23 @@ adminer-<version>/adminer
 
 Your browser opens <http://127.0.0.1:23646/>. To stop Adminer, press Enter in the terminal. The PHP
 inside is statically linked, so it needs no libraries from your distribution.
+
+## Run on macOS
+
+Download `adminer-<version>-macos-arm64.zip` from the
+[releases](https://github.com/vrana/adminer-desktop/releases) and open it, which unpacks
+`Adminer.app`. Open the app: a Terminal window runs Adminer and your browser shows
+<http://127.0.0.1:23646/>. To stop Adminer, press Enter in the Terminal window. It needs a Mac with
+Apple Silicon and macOS 12 or newer.
+
+The app is not signed by a registered Apple developer, so macOS refuses to open it at first. Go to
+*System Settings › Privacy & Security* and click *Open Anyway* next to the message about Adminer.
+
+If macOS says that the app is damaged, remove the mark macOS puts on downloaded files instead:
+
+```bash
+xattr -dr com.apple.quarantine Adminer.app
+```
 
 ## Port
 
@@ -65,6 +82,7 @@ opened directly.
   [oci8](https://github.com/php/pecl-database-oci8) extensions and the Visual C++ runtime
 - on Linux, a static PHP built by [static-php-cli](https://static-php.dev/) with only the
   extensions Adminer needs, with its licenses
+- on macOS, the PHP of static-php-cli's prebuilt *common* build
 - the small `launcher.php` and `www/index.php` around them, both in `src/`
 
 ## Build
@@ -82,10 +100,11 @@ Then, on any system:
 php build.php
 ```
 
-Downloads the latest Adminer release, the latest PHP 8.5 for Windows, the extensions and the tools
-(7-Zip's `7zr.exe` and installer stub, [rcedit](https://github.com/electron/rcedit)), caches them
-in `cache/` and writes `dist/adminer-<version>.exe` and `dist/adminer-<version>-linux-x86_64.tar.xz`.
-The exe is built only on Windows, as the Visual C++ runtime is copied from the system, and the
+Downloads the latest Adminer release, the latest PHP 8.5 for Windows and macOS, the extensions and
+the tools (7-Zip's `7zr.exe` and installer stub, [rcedit](https://github.com/electron/rcedit)),
+caches them in `cache/` and writes `dist/adminer-<version>.exe`,
+`dist/adminer-<version>-linux-x86_64.tar.xz` and `dist/adminer-<version>-macos-arm64.zip`. The exe
+is built only on Windows, as the Visual C++ runtime is copied from the system, and the
 `.tar.xz` needs the `xz` command. Pass a version to build another Adminer release:
 
 ```bash
@@ -96,4 +115,5 @@ php build.php 6.1.2
 
 Apache License 2.0 or GPL 2, the same as Adminer. The bundled PHP, its libraries and the
 extensions keep their own licenses. On Windows they are listed in `php/license.txt` and
-`php/readme-redist-bins.txt` inside the exe, on Linux in `php/license/`.
+`php/readme-redist-bins.txt` inside the exe, on Linux in `php/license/`. The libraries of the macOS
+PHP are listed at <https://dl.static-php.dev/static-php-cli/common/license/>.

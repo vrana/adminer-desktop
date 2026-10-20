@@ -1,0 +1,3 @@
+#!/bin/sh
+# The app's executable: run Adminer in a Terminal window, where the launcher stops on Enter
+exec open -a Terminal "$(dirname "$0")/../Resources/adminer.command"

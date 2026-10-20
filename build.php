@@ -1,5 +1,5 @@
 <?php
-/* Assemble the Windows and Linux downloads in dist/.
+/* Assemble the Windows, Linux and macOS downloads in dist/.
 * Usage: php build.php [VERSION]
 * Adminer is downloaded from GitHub, the latest release unless a version is given.
 * PHP and the tools come from their official downloads, cached in cache/.
@@ -12,6 +12,7 @@ const PLUGIN_URL ='https://raw.githubusercontent.com/vrana/adminer/v%s/plugins/l
 
 include __DIR__ . "/windows/build.inc.php";
 include __DIR__ . "/linux/build.inc.php";
+include __DIR__ . "/mac/build.inc.php";
 
 $root = __DIR__;
 $cache = "$root/cache";
@@ -34,6 +35,9 @@ if (PHP_OS_FAMILY == 'Windows') {
 
 echo "\nBuilding Linux\n";
 build_linux($version, $adminer, $plugin);
+
+echo "\nBuilding macOS\n";
+build_mac($version, $adminer, $plugin);
 
 /** Find a file in the latest release of a GitHub repository
 * @param string $pattern regular expression matching the file name
