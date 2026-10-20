@@ -4,10 +4,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this is
 
-Adminer as one Windows executable for people without PHP. It is packaging, not a fork: the
-compiled release `adminer.php` stays untouched, everything specific to the desktop is in the
-small files around it. Only Windows exists so far; macOS (an `.app` in a zip) and Linux (a
-static PHP from static-php-cli) were planned around the same `src/` but not started.
+Adminer with its own PHP for people without PHP: one Windows executable and a Linux `.tar.gz`. It
+is packaging, not a fork: the compiled release `adminer.php` stays untouched, everything specific
+to the desktop is in the small files around it, and both platforms share `src/`. macOS (an `.app`
+in a zip, with static-php-cli's PHP like Linux) was planned but not started.
 
 ## Layout
 
@@ -15,10 +15,13 @@ static PHP from static-php-cli) were planned around the same `src/` but not star
 | --- | --- |
 | `src/launcher.php` | Run by the bundled PHP. Picks the port, starts `php -S`, opens the browser, waits for Enter. |
 | `src/www/index.php` | The docroot's only file. Host check, then `include "../adminer.php"`. |
+| `build.php` | Downloads Adminer, calls both platform builds; the shared helpers (`cached_download()`, `github_asset()`, …). |
+| `windows/build.inc.php` | `build_windows()`: downloads PHP, extensions and tools, writes `dist/adminer-<version>.exe`. |
 | `windows/config.txt` | 7-Zip installer config: `RunProgram="php\\php.exe -n launcher.php"`. |
 | `windows/adminer.manifest` | `asInvoker`, see below. |
 | `windows/adminer.ico` | Rendered once from `adminer/static/logo.svg` (16–256 px PNGs). |
-| `build.php` | Downloads everything, assembles `dist/build/`, writes `dist/adminer-<version>.exe`. |
+| `linux/build.inc.php` | `build_linux()`: downloads static PHP, writes `dist/adminer-<version>-linux-<arch>.tar.gz`. |
+| `linux/adminer` | The shell script a Linux user starts: `exec php/php -n launcher.php`. |
 
 The exe is `7zSD.sfx` + `config.txt` + a `.7z` of the payload, concatenated. The stub unpacks to
 `%TEMP%\7zSxxxxxxxx\`, runs `RunProgram` and deletes the folder when that program ends. Unpacked:
@@ -28,23 +31,32 @@ adminer.php  adminer-plugins/login-ip.php  launcher.php  www/index.php
 php/  php.exe php8.dll + DLLs, ext/php_{mysqli,pgsql,sqlite3,sqlsrv,oci8}.dll
 ```
 
+The Linux archive holds the same files in `adminer-<version>/`, with `php/php` (static-php-cli's
+*common* build, UPX-compressed, about 13 MB) instead of the DLLs and the `adminer` script. It is
+unpacked once by the user, not on every start. The common build has `pgsql`, `sqlite3` and
+`pdo_mysql` compiled in but no `mysqli`, and Adminer falls back to PDO_MySQL by itself; the *bulk*
+build has `mysqli` but is 30 MB. The archive is written with `PharData`, which sets the executable
+bit of `adminer` and `php/php` also on Windows.
+
 ## Build
 
-`php build.php [VERSION]`, Windows only (the Visual C++ runtime is copied from System32). Every
-download goes through `cached_download()` into `cache/<URL path>`; the path holds the version even
-where the file name does not (`releases/download/26.04/7zr.exe`). `releases.json` and the GitHub
-API answers are refreshed after a day, everything else is kept forever. Delete `cache/` to start
-over. There are no hashes: they would come from the same server as the files, which HTTPS already
+`php build.php [VERSION]` builds the Linux archives for x86_64 and aarch64 on any system, and the
+exe only on Windows (the Visual C++ runtime is copied from System32). Every download goes through
+`cached_download()` into `cache/<URL path>`; the path holds the version even where the file name
+does not (`releases/download/26.04/7zr.exe`). `releases.json`, the GitHub API answers and
+static-php-cli's listing are refreshed after a day, everything else is kept forever. Delete
+`cache/` to start over. There are no hashes: they would come from the same server as the files, which HTTPS already
 covers.
 
-Versions are never pinned: the latest Adminer release, the latest PHP of `PHP_BRANCH`, and the
-latest GitHub release of sqlsrv, oci8, 7-Zip and rcedit. The extension zips must match
+Versions are never pinned: the latest Adminer release, the latest PHP of `PHP_BRANCH` on
+windows.php.net and on static-php-cli (they differ: 8.5.11 and 8.5.8 at the time of writing), and
+the latest GitHub release of sqlsrv, oci8, 7-Zip and rcedit. The extension zips must match
 `PHP_BRANCH`-`PHP_BUILD`; when PHP's branch is raised, check that both extensions publish a build
 for it. The unauthenticated GitHub API allows 60 requests an hour, which the one-day cache keeps
 far away; when it does run out, `gh api repos/<repo>/releases/latest > cache/repos/<repo>/releases/latest`
 fills the cache under the token's own limit.
 
-There is no test suite and no linter. `php -l` on the three PHP files and a `php build.php` are the
+There is no test suite and no linter. `php -l` on the five PHP files and a `php build.php` are the
 check, plus the HTTP check below for anything that changes the payload.
 
 ## Things that were found the hard way
@@ -89,6 +101,12 @@ cd <scratch>/x && php/php.exe -n -d extension_dir=php/ext -d extension=mysqli -d
 and drive it with a curl script (log in, select, export, import), as for the `adminer` repo.
 Use a port other than 23646, which a running Adminer may hold, and stop the server by its port in
 the command line rather than every `php.exe`. A wrong `Host` header must get 403.
+
+On Linux, the launcher can run without opening anything with a fake `xdg-open` first in `PATH` (a
+script that only logs its argument) and stdin kept open (`sleep 60 | adminer-<version>/adminer`);
+it stops when stdin ends. The bundled PHP has no curl, so run a curl script with another PHP. A
+database server the test machine cannot reach still shows which extension Adminer picked: mysqli
+answers "Operation timed out", PDO `SQLSTATE[HY000] [2002]`.
 
 ## Rules
 
