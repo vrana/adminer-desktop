@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this is
 
-Adminer with its own PHP for people without PHP: one Windows executable and a Linux `.tar.gz`. It
+Adminer with its own PHP for people without PHP: one Windows executable and a Linux `.tar.xz`. It
 is packaging, not a fork: the compiled release `adminer.php` stays untouched, everything specific
 to the desktop is in the small files around it, and both platforms share `src/`. macOS (an `.app`
 in a zip, with static-php-cli's PHP like Linux) was planned but not started.
@@ -20,7 +20,8 @@ in a zip, with static-php-cli's PHP like Linux) was planned but not started.
 | `windows/config.txt` | 7-Zip installer config: `RunProgram="php\\php.exe -n launcher.php"`. |
 | `windows/adminer.manifest` | `asInvoker`, see below. |
 | `windows/adminer.ico` | Rendered once from `adminer/static/logo.svg` (16–256 px PNGs). |
-| `linux/build.inc.php` | `build_linux()`: downloads static PHP, writes `dist/adminer-<version>-linux-<arch>.tar.gz`. |
+| `linux/build-php.sh` | Run by hand on x86_64 Linux: builds the static PHP with static-php-cli into `cache/static-php/<version>/`. |
+| `linux/build.inc.php` | `build_linux()`: packs the newest PHP from `cache/static-php/`, writes `dist/adminer-<version>-linux-x86_64.tar.xz`. |
 | `linux/adminer` | The shell script a Linux user starts: `exec php/php -n launcher.php`. |
 
 The exe is `7zSD.sfx` + `config.txt` + a `.7z` of the payload, concatenated. The stub unpacks to
@@ -31,26 +32,41 @@ adminer.php  adminer-plugins/login-ip.php  launcher.php  www/index.php
 php/  php.exe php8.dll + DLLs, ext/php_{mysqli,pgsql,sqlite3,sqlsrv,oci8}.dll
 ```
 
-The Linux archive holds the same files in `adminer-<version>/`, with `php/php` (static-php-cli's
-*common* build, UPX-compressed, about 13 MB) instead of the DLLs and the `adminer` script. It is
-unpacked once by the user, not on every start. The common build has `pgsql`, `sqlite3` and
-`pdo_mysql` compiled in but no `mysqli`, and Adminer falls back to PDO_MySQL by itself; the *bulk*
-build has `mysqli` but is 30 MB. The archive is written with `PharData`, which sets the executable
-bit of `adminer` and `php/php` also on Windows.
+The Linux archive holds the same files in `adminer-<version>/`, with the static `php/php` and its
+`php/license/` instead of the DLLs, and the `adminer` script. It is unpacked once by the user, not
+on every start. The PHP is our own build, with only `session`, `mysqli`, `pgsql`, `sqlite3` and
+`zlib` besides the core: 14.8 MB, 4.5 MB in xz. Not `iconv`, which Adminer uses only for importing
+UTF-16 files: its GNU libiconv is LGPL, whose relinking condition a static binary would have to
+meet, and it was 1 MB. `php/license/` has only the licenses of what is linked in (PHP, OpenSSL,
+PostgreSQL, SQLite, zlib); static-php-cli also writes those of libedit, ncurses and libxml2, which
+PostgreSQL's package passes to the linker but libpq does not use, and none of their code is in the
+binary. static-php-cli's prebuilt binaries were used first and dropped: the *common* build is
+UPX-packed, 13 MB in the archive and lacks `mysqli`, the *bulk* build is 30 MB. UPX was measured
+and rejected: it saves 9.4 MB on disk (6.4 MB binary) but adds 1.2 MB to the xz download,
+65 ms to each of the two PHP starts and 8.7 MB of memory to each process, as the unpacked copy is
+private memory. The archive is written with `PharData`, which sets the executable bit of `adminer`
+and `php/php` also on Windows, and compressed by the `xz` command (Git for Windows has one),
+because PharData knows only gzip and bzip2; xz makes 4.8 MB of what gzip makes 6.0 MB. Only x86_64
+is built, as nothing here can build or run aarch64.
 
 ## Build
 
-`php build.php [VERSION]` builds the Linux archives for x86_64 and aarch64 on any system, and the
-exe only on Windows (the Visual C++ runtime is copied from System32). Every download goes through
-`cached_download()` into `cache/<URL path>`; the path holds the version even where the file name
-does not (`releases/download/26.04/7zr.exe`). `releases.json`, the GitHub API answers and
-static-php-cli's listing are refreshed after a day, everything else is kept forever. Delete
-`cache/` to start over. There are no hashes: they would come from the same server as the files, which HTTPS already
-covers.
+`linux/build-php.sh` builds the Linux PHP first, on x86_64 Linux (WSL works): it takes a few
+minutes in `/tmp/adminer-spc`, installs static-php-cli's dependencies and a musl toolchain with
+sudo the first time, and reads `PHP_BRANCH` from `build.php`. Rerun it for PHP security releases;
+it needs `GITHUB_TOKEN` (e.g. `GITHUB_TOKEN=$(gh auth token)`) when the anonymous GitHub API limit
+is used up.
 
-Versions are never pinned: the latest Adminer release, the latest PHP of `PHP_BRANCH` on
-windows.php.net and on static-php-cli (they differ: 8.5.11 and 8.5.8 at the time of writing), and
-the latest GitHub release of sqlsrv, oci8, 7-Zip and rcedit. The extension zips must match
+`php build.php [VERSION]` then builds the Linux archive on any system and the exe only on Windows
+(the Visual C++ runtime is copied from System32). Every download goes through `cached_download()`
+into `cache/<URL path>`; the path holds the version even where the file name does not
+(`releases/download/26.04/7zr.exe`). `releases.json` and the GitHub API answers are refreshed after
+a day, everything else is kept forever. Deleting `cache/` also deletes the built PHP. There are no
+hashes: they would come from the same server as the files, which HTTPS already covers.
+
+Versions are never pinned: the latest Adminer release, the latest PHP of `PHP_BRANCH` (on
+windows.php.net for Windows, from php.net through static-php-cli for Linux), and the latest GitHub
+release of static-php-cli, sqlsrv, oci8, 7-Zip and rcedit. The extension zips must match
 `PHP_BRANCH`-`PHP_BUILD`; when PHP's branch is raised, check that both extensions publish a build
 for it. The unauthenticated GitHub API allows 60 requests an hour, which the one-day cache keeps
 far away; when it does run out, `gh api repos/<repo>/releases/latest > cache/repos/<repo>/releases/latest`
