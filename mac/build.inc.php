@@ -8,7 +8,7 @@
 function build_mac(string $version, string $adminer, string $plugin): void {
 	global $root, $dist;
 	// built by build-php.sh on GitHub's Apple Silicon runner, the linker signs it ad-hoc as arm64 requires
-	$php = static_php('macos-arm64', "run mac/build-php.php");
+	$php = static_php('macos-arm64', "run build-php-github.php");
 
 	$filename = "$dist/adminer-$version-macos-arm64.zip";
 	echo "Writing $filename\n";

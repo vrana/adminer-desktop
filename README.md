@@ -2,7 +2,8 @@
 
 [Adminer](https://www.adminer.org/) with its own PHP, for people who don't have PHP or don't want
 to set up a web server: one `adminer.exe` of about 7 MB for Windows, a `.tar.xz` of about 5 MB for
-Linux, an `Adminer.app` in a `.zip` for macOS. Start it and Adminer opens in your browser.
+Linux, an `Adminer.app` in a `.zip` of about 7 MB for macOS. Start it and Adminer opens in your
+browser.
 
 ## Run on Windows
 
@@ -98,7 +99,7 @@ The macOS one on GitHub's Apple Silicon runner: this starts the workflow `build-
 waits for it and downloads its result:
 
 ```bash
-php mac/build-php.php
+php build-php-github.php
 ```
 
 Then, on any system:

@@ -1,12 +1,11 @@
 <?php
-// Build the static PHP for macOS on GitHub's Apple Silicon runner and download it into cache/static-php/macos-arm64/, which build.php packs.
-// Needs gh signed in. The runner builds what is pushed: .github/workflows/build-php.yml and build-php.sh.
+// Build the static PHP on GitHub's runners (Apple Silicon macOS, Windows) and download it into cache/static-php/PLATFORM/, which build.php packs.
+// Needs gh signed in. The runners build what is pushed: .github/workflows/build-php.yml and build-php.sh.
 
 const REPOSITORY = 'vrana/adminer-desktop';
 const WORKFLOW = 'build-php.yml';
-const ARTIFACT = 'php-macos-arm64';
 
-$target = dirname(__DIR__) . "/cache/static-php/macos-arm64";
+$cache = __DIR__ . "/cache/static-php";
 $start = time();
 gh("workflow run " . WORKFLOW . " --repo " . REPOSITORY);
 
@@ -27,16 +26,18 @@ for ($i = 0; !$run; $i++) {
 	}
 }
 echo "Waiting for $run[url]\n";
-gh("run watch $run[databaseId] --repo " . REPOSITORY . " --exit-status");
+// without --exit-status: a platform which failed does not keep the others from being downloaded
+gh("run watch $run[databaseId] --repo " . REPOSITORY);
 
-// gh run download does not overwrite, so unpack aside and move each version into place
-$download = "$target.download";
+// gh run download does not overwrite, so unpack aside (a directory php-PLATFORM per artifact) and move each version into place
+$download = "$cache.download";
 remove_recursive($download);
-gh("run download $run[databaseId] --repo " . REPOSITORY . " --name " . ARTIFACT . " --dir " . escapeshellarg($download));
-if (!is_dir($target) && !mkdir($target, 0755, true)) {
-	fail("Cannot create $target.");
-}
-foreach (glob("$download/*", GLOB_ONLYDIR) as $dir) {
+gh("run download $run[databaseId] --repo " . REPOSITORY . " --dir " . escapeshellarg($download));
+foreach (glob("$download/php-*/*", GLOB_ONLYDIR) as $dir) {
+	$target = "$cache/" . preg_replace('~^php-~', '', basename(dirname($dir)));
+	if (!is_dir($target) && !mkdir($target, 0755, true)) {
+		fail("Cannot create $target.");
+	}
 	remove_recursive("$target/" . basename($dir));
 	if (!rename($dir, "$target/" . basename($dir))) {
 		fail("Cannot move $dir to $target.");

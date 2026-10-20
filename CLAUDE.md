@@ -17,14 +17,14 @@ platforms share `src/`.
 | `src/www/index.php` | The docroot's only file. Host check, then `include "../adminer.php"`. |
 | `build.php` | Downloads Adminer, calls the platform builds; the shared helpers (`cached_download()`, `github_asset()`, `static_php()`, …). |
 | `build-php.sh` | Builds the static PHP with static-php-cli on x86_64 Linux or Apple Silicon macOS into `cache/static-php/<os>-<arch>/<version>/`. |
-| `.github/workflows/build-php.yml` | Runs `build-php.sh` on GitHub's `macos-15` runner, uploads `php-macos-arm64` as an artifact. |
+| `.github/workflows/build-php.yml` | Runs `build-php.sh` on GitHub's `macos-15` and `windows-2022` runners, uploads `php-<platform>` artifacts. |
 | `windows/build.inc.php` | `build_windows()`: downloads PHP, extensions and tools, writes `dist/adminer-<version>.exe`. |
 | `windows/config.txt` | 7-Zip installer config: `RunProgram="php\\php.exe -n launcher.php"`. |
 | `windows/adminer.manifest` | `asInvoker`, see below. |
 | `windows/adminer.ico` | Rendered once from `adminer/static/logo.svg` (16–256 px PNGs). |
 | `linux/build.inc.php` | `build_linux()`: packs the newest PHP from `cache/static-php/linux-x86_64/`, writes `dist/adminer-<version>-linux-x86_64.tar.xz`. |
 | `linux/adminer` | The shell script a Linux user starts: `exec php/php -n launcher.php`. |
-| `mac/build-php.php` | Starts the workflow by `gh`, waits for it and downloads its artifact into `cache/static-php/macos-arm64/`. |
+| `build-php-github.php` | Starts the workflow by `gh`, waits for it and downloads its artifacts into `cache/static-php/<platform>/`. |
 | `mac/build.inc.php` | `build_mac()`: packs the newest PHP from `cache/static-php/macos-arm64/`, writes `dist/adminer-<version>-macos-arm64.zip`. |
 | `mac/Info.plist` | The app's plist; `VERSION` is replaced by the Adminer version. |
 | `mac/adminer` | The app's executable: `open -a Terminal` with `adminer.command`. |
@@ -65,10 +65,10 @@ same lean build as on Linux, for arm64 (Apple Silicon only), built by `build-php
 `macos-15` runner, as `spc` needs a Mac; the artifact loses the executable bit, which the zip sets
 again. arm64 code must be signed: Apple's linker signs it ad-hoc (`LC_CODE_SIGNATURE`), so changing
 the binary afterwards, e.g. stripping it, would break the signature, and re-signing needs a Mac or
-`rcodesign`. static-php-cli's prebuilt *common* build was used first: 44.5 MB unpacked and 15 MB in
-the zip, `pdo_mysql` but no `mysqli`, macOS 12. **Nothing of the macOS download has been run on a
-Mac yet** and the workflow has not run yet: only the zip's structure, permissions, plist and binary
-headers were checked, with the prebuilt PHP. Unverified: the workflow, that the app opens Terminal
+`rcodesign`. The built PHP is 15.6 MB, needs macOS 12 and makes a 6.8 MB zip; static-php-cli's
+prebuilt *common* build used first was 44.5 MB, a 15 MB zip, and had `pdo_mysql` but no `mysqli`.
+**Nothing of the macOS download has been run on a Mac yet**: only the zip's structure, permissions,
+plist and the binary's headers and signature were checked. Unverified: that the app opens Terminal
 as intended, whether Gatekeeper asks again for `adminer.command` inside an approved app, and the
 README's *Open Anyway* steps.
 
@@ -78,10 +78,11 @@ The static PHP of Linux and macOS is built first, by `build-php.sh`, which reads
 `build.php` and has the only list of the extensions. On x86_64 Linux (WSL works) it runs by hand:
 it takes a few minutes in `/tmp/adminer-spc`, installs static-php-cli's dependencies and a musl
 toolchain with sudo the first time, and needs `GITHUB_TOKEN` (e.g. `GITHUB_TOKEN=$(gh auth token)`)
-when the anonymous GitHub API limit is used up. For macOS, `php mac/build-php.php` runs it on
-GitHub: the workflow builds what is pushed, and its artifact is downloadable only when signed in,
-so nothing is published. Rerun both for PHP security releases; `build.php` packs the newest PHP of
-`PHP_BRANCH` it finds.
+when the anonymous GitHub API limit is used up. For macOS, `php build-php-github.php` runs it on
+GitHub, together with Windows, where a static PHP (with `sqlsrv` compiled in) is being tried and
+not packed yet: the workflow builds what is pushed, and its artifacts are downloadable only when
+signed in, so nothing is published. Rerun both for PHP security releases; `build.php` packs the
+newest PHP of `PHP_BRANCH` it finds.
 
 `php build.php [VERSION]` then builds the Linux and macOS archives on any system and the exe only
 on Windows (the Visual C++ runtime is copied from System32). Every download goes through
