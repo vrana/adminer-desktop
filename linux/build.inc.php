@@ -6,20 +6,8 @@
 * @param string $plugin path to login-ip.php
 */
 function build_linux(string $version, string $adminer, string $plugin): void {
-	global $root, $cache, $dist;
-	// built by linux/build-php.sh with only the extensions Adminer uses
-	$php_version = '';
-	foreach (glob("$cache/static-php/*/php") as $filename) {
-		$dir_version = basename(dirname($filename));
-		if (preg_match('~^' . preg_quote(PHP_BRANCH) . '\.~', $dir_version) && version_compare($dir_version, $php_version) > 0) {
-			$php_version = $dir_version;
-		}
-	}
-	if ($php_version == '') {
-		fail("Run linux/build-php.sh on Linux first, cache/static-php/ has no PHP " . PHP_BRANCH . ".");
-	}
-	$php = "$cache/static-php/$php_version";
-	echo "Taking PHP $php_version from cache/static-php/\n";
+	global $root, $dist;
+	$php = static_php('linux-x86_64', "run build-php.sh on x86_64 Linux");
 
 	$filename = "$dist/adminer-$version-linux-x86_64.tar";
 	echo "Writing $filename.xz\n";

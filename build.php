@@ -39,6 +39,27 @@ build_linux($version, $adminer, $plugin);
 echo "\nBuilding macOS\n";
 build_mac($version, $adminer, $plugin);
 
+/** Find the newest static PHP of PHP_BRANCH built by build-php.sh
+* @param string $platform e.g. linux-x86_64
+* @param string $how how to build it if there is none
+* @return string directory with php and license/
+*/
+function static_php(string $platform, string $how): string {
+	global $cache;
+	$php_version = '';
+	foreach (glob("$cache/static-php/$platform/*/php") as $filename) {
+		$dir_version = basename(dirname($filename));
+		if (preg_match('~^' . preg_quote(PHP_BRANCH) . '\.~', $dir_version) && version_compare($dir_version, $php_version) > 0) {
+			$php_version = $dir_version;
+		}
+	}
+	if ($php_version == '') {
+		fail("cache/static-php/$platform/ has no PHP " . PHP_BRANCH . ", $how first.");
+	}
+	echo "Taking PHP $php_version from cache/static-php/$platform/\n";
+	return "$cache/static-php/$platform/$php_version";
+}
+
 /** Find a file in the latest release of a GitHub repository
 * @param string $pattern regular expression matching the file name
 * @return string URL

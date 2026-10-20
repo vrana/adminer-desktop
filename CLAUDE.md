@@ -15,15 +15,17 @@ platforms share `src/`.
 | --- | --- |
 | `src/launcher.php` | Run by the bundled PHP. Picks the port, starts `php -S`, opens the browser, waits for Enter. |
 | `src/www/index.php` | The docroot's only file. Host check, then `include "../adminer.php"`. |
-| `build.php` | Downloads Adminer, calls the platform builds; the shared helpers (`cached_download()`, `github_asset()`, …). |
+| `build.php` | Downloads Adminer, calls the platform builds; the shared helpers (`cached_download()`, `github_asset()`, `static_php()`, …). |
+| `build-php.sh` | Builds the static PHP with static-php-cli on x86_64 Linux or Apple Silicon macOS into `cache/static-php/<os>-<arch>/<version>/`. |
+| `.github/workflows/build-php.yml` | Runs `build-php.sh` on GitHub's `macos-15` runner, uploads `php-macos-arm64` as an artifact. |
 | `windows/build.inc.php` | `build_windows()`: downloads PHP, extensions and tools, writes `dist/adminer-<version>.exe`. |
 | `windows/config.txt` | 7-Zip installer config: `RunProgram="php\\php.exe -n launcher.php"`. |
 | `windows/adminer.manifest` | `asInvoker`, see below. |
 | `windows/adminer.ico` | Rendered once from `adminer/static/logo.svg` (16–256 px PNGs). |
-| `linux/build-php.sh` | Run by hand on x86_64 Linux: builds the static PHP with static-php-cli into `cache/static-php/<version>/`. |
-| `linux/build.inc.php` | `build_linux()`: packs the newest PHP from `cache/static-php/`, writes `dist/adminer-<version>-linux-x86_64.tar.xz`. |
+| `linux/build.inc.php` | `build_linux()`: packs the newest PHP from `cache/static-php/linux-x86_64/`, writes `dist/adminer-<version>-linux-x86_64.tar.xz`. |
 | `linux/adminer` | The shell script a Linux user starts: `exec php/php -n launcher.php`. |
-| `mac/build.inc.php` | `build_mac()`: downloads static-php-cli's prebuilt PHP, writes `dist/adminer-<version>-macos-arm64.zip`. |
+| `mac/build-php.php` | Starts the workflow by `gh`, waits for it and downloads its artifact into `cache/static-php/macos-arm64/`. |
+| `mac/build.inc.php` | `build_mac()`: packs the newest PHP from `cache/static-php/macos-arm64/`, writes `dist/adminer-<version>-macos-arm64.zip`. |
 | `mac/Info.plist` | The app's plist; `VERSION` is replaced by the Adminer version. |
 | `mac/adminer` | The app's executable: `open -a Terminal` with `adminer.command`. |
 | `mac/adminer.command` | Run in Terminal: `exec php/php -n launcher.php`, like `linux/adminer`. |
@@ -58,42 +60,46 @@ nothing here can build or run aarch64.
 The macOS zip holds `Adminer.app/Contents/` with `Info.plist`, `MacOS/adminer` and the payload in
 `Resources/`. A `.app` has no console, but the launcher waits for Enter, so the executable opens
 `Resources/adminer.command` in Terminal. The zip is written with `ZipArchive`, whose
-`setExternalAttributesName()` stores the Unix permissions Archive Utility restores. The PHP is
-static-php-cli's prebuilt *common* build for arm64 (Apple Silicon only): it is
-44.5 MB unpacked and 15 MB in the zip, has `pdo_mysql` but no `mysqli`, needs macOS 12, links only
-system libraries and carries the code signature arm64 requires (`LC_CODE_SIGNATURE`, found by
-parsing the load commands). Stripping or changing it would break the signature, re-signing needs a
-Mac. Our own lean build like on Linux needs a Mac to run `spc` on. **Nothing of the macOS download
-has been run on a Mac yet**: only the zip's structure, permissions, plist and binary headers were
-checked. Unverified: that the app opens Terminal as intended, whether
-Gatekeeper asks again for `adminer.command` inside an approved app, and the README's *Open Anyway*
-steps.
+`setExternalAttributesName()` stores the Unix permissions Archive Utility restores. The PHP is the
+same lean build as on Linux, for arm64 (Apple Silicon only), built by `build-php.sh` on GitHub's
+`macos-15` runner, as `spc` needs a Mac; the artifact loses the executable bit, which the zip sets
+again. arm64 code must be signed: Apple's linker signs it ad-hoc (`LC_CODE_SIGNATURE`), so changing
+the binary afterwards, e.g. stripping it, would break the signature, and re-signing needs a Mac or
+`rcodesign`. static-php-cli's prebuilt *common* build was used first: 44.5 MB unpacked and 15 MB in
+the zip, `pdo_mysql` but no `mysqli`, macOS 12. **Nothing of the macOS download has been run on a
+Mac yet** and the workflow has not run yet: only the zip's structure, permissions, plist and binary
+headers were checked, with the prebuilt PHP. Unverified: the workflow, that the app opens Terminal
+as intended, whether Gatekeeper asks again for `adminer.command` inside an approved app, and the
+README's *Open Anyway* steps.
 
 ## Build
 
-`linux/build-php.sh` builds the Linux PHP first, on x86_64 Linux (WSL works): it takes a few
-minutes in `/tmp/adminer-spc`, installs static-php-cli's dependencies and a musl toolchain with
-sudo the first time, and reads `PHP_BRANCH` from `build.php`. Rerun it for PHP security releases;
-it needs `GITHUB_TOKEN` (e.g. `GITHUB_TOKEN=$(gh auth token)`) when the anonymous GitHub API limit
-is used up.
+The static PHP of Linux and macOS is built first, by `build-php.sh`, which reads `PHP_BRANCH` from
+`build.php` and has the only list of the extensions. On x86_64 Linux (WSL works) it runs by hand:
+it takes a few minutes in `/tmp/adminer-spc`, installs static-php-cli's dependencies and a musl
+toolchain with sudo the first time, and needs `GITHUB_TOKEN` (e.g. `GITHUB_TOKEN=$(gh auth token)`)
+when the anonymous GitHub API limit is used up. For macOS, `php mac/build-php.php` runs it on
+GitHub: the workflow builds what is pushed, and its artifact is downloadable only when signed in,
+so nothing is published. Rerun both for PHP security releases; `build.php` packs the newest PHP of
+`PHP_BRANCH` it finds.
 
 `php build.php [VERSION]` then builds the Linux and macOS archives on any system and the exe only
 on Windows (the Visual C++ runtime is copied from System32). Every download goes through
 `cached_download()` into `cache/<URL path>`; the path holds the version even where the file name
-does not (`releases/download/26.04/7zr.exe`). `releases.json`, the GitHub API answers and
-static-php-cli's listing are refreshed after a day, everything else is kept forever. Deleting
-`cache/` also deletes the built PHP. There are no hashes: they would come from the same server as
-the files, which HTTPS already covers.
+does not (`releases/download/26.04/7zr.exe`). `releases.json` and the GitHub API answers are
+refreshed after a day, everything else is kept forever. Deleting `cache/` also deletes the built
+PHP. There are no hashes: they would come from the same server as the files, which HTTPS already
+covers.
 
 Versions are never pinned: the latest Adminer release, the latest PHP of `PHP_BRANCH` (on
-windows.php.net for Windows, from php.net through static-php-cli for Linux), and the latest GitHub
+windows.php.net for Windows, from php.net through static-php-cli for Linux and macOS), and the latest GitHub
 release of static-php-cli, sqlsrv, oci8, 7-Zip and rcedit. The extension zips must match
 `PHP_BRANCH`-`PHP_BUILD`; when PHP's branch is raised, check that both extensions publish a build
 for it. The unauthenticated GitHub API allows 60 requests an hour, which the one-day cache keeps
 far away; when it does run out, `gh api repos/<repo>/releases/latest > cache/repos/<repo>/releases/latest`
 fills the cache under the token's own limit.
 
-There is no test suite and no linter. `php -l` on the six PHP files and a `php build.php` are the
+There is no test suite and no linter. `php -l` on the seven PHP files and a `php build.php` are the
 check, plus the HTTP check below for anything that changes the payload.
 
 A release follows each Adminer release: `build.php` for that version, a `v<VERSION>` tag here and a

@@ -2,7 +2,7 @@
 
 [Adminer](https://www.adminer.org/) with its own PHP, for people who don't have PHP or don't want
 to set up a web server: one `adminer.exe` of about 7 MB for Windows, a `.tar.xz` of about 5 MB for
-Linux, an `Adminer.app` in a 15 MB `.zip` for macOS. Start it and Adminer opens in your browser.
+Linux, an `Adminer.app` in a `.zip` for macOS. Start it and Adminer opens in your browser.
 
 ## Run on Windows
 
@@ -80,18 +80,25 @@ opened directly.
 - on Windows, the official PHP for Windows, trimmed to the extensions Adminer needs, with its
   licenses, the [sqlsrv](https://github.com/microsoft/msphpsql_sqlsrv) and
   [oci8](https://github.com/php/pecl-database-oci8) extensions and the Visual C++ runtime
-- on Linux, a static PHP built by [static-php-cli](https://static-php.dev/) with only the
+- on Linux and macOS, a static PHP built by [static-php-cli](https://static-php.dev/) with only the
   extensions Adminer needs, with its licenses
-- on macOS, the PHP of static-php-cli's prebuilt *common* build
 - the small `launcher.php` and `www/index.php` around them, both in `src/`
 
 ## Build
 
-The static PHP for Linux is built first, on x86_64 Linux (WSL works), into `cache/static-php/`.
-It takes a few minutes and installs static-php-cli's build dependencies with sudo:
+The static PHP for Linux and macOS is built first, into `cache/static-php/`. The Linux one on
+x86_64 Linux (WSL works), which takes a few minutes and installs static-php-cli's build
+dependencies with sudo:
 
 ```bash
-linux/build-php.sh
+./build-php.sh
+```
+
+The macOS one on GitHub's Apple Silicon runner: this starts the workflow `build-php.yml` by `gh`,
+waits for it and downloads its result:
+
+```bash
+php mac/build-php.php
 ```
 
 Then, on any system:
@@ -100,9 +107,9 @@ Then, on any system:
 php build.php
 ```
 
-Downloads the latest Adminer release, the latest PHP 8.5 for Windows and macOS, the extensions and
-the tools (7-Zip's `7zr.exe` and installer stub, [rcedit](https://github.com/electron/rcedit)),
-caches them in `cache/` and writes `dist/adminer-<version>.exe`,
+Downloads the latest Adminer release, the latest PHP 8.5 for Windows, the extensions and the tools
+(7-Zip's `7zr.exe` and installer stub, [rcedit](https://github.com/electron/rcedit)), caches them
+in `cache/` and writes `dist/adminer-<version>.exe`,
 `dist/adminer-<version>-linux-x86_64.tar.xz` and `dist/adminer-<version>-macos-arm64.zip`. The exe
 is built only on Windows, as the Visual C++ runtime is copied from the system, and the
 `.tar.xz` needs the `xz` command. Pass a version to build another Adminer release:
@@ -115,5 +122,4 @@ php build.php 6.1.2
 
 Apache License 2.0 or GPL 2, the same as Adminer. The bundled PHP, its libraries and the
 extensions keep their own licenses. On Windows they are listed in `php/license.txt` and
-`php/readme-redist-bins.txt` inside the exe, on Linux in `php/license/`. The libraries of the macOS
-PHP are listed at <https://dl.static-php.dev/static-php-cli/common/license/>.
+`php/readme-redist-bins.txt` inside the exe, on Linux and macOS in `php/license/`.
