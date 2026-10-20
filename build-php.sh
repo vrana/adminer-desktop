@@ -17,6 +17,8 @@ case "$(uname -s)-$(uname -m)" in
 		platform=windows-x64; spc=spc-windows-x64.exe
 		# sqlsrv imports only Windows' ODBC32.dll, which finds Microsoft's ODBC driver when connecting
 		extensions="$extensions,sqlsrv"
+		# static-php-cli runs tar with C:\ paths, which Git's GNU tar reads as a remote host; Windows' own tar is bsdtar
+		PATH="$(cygpath -u "$SYSTEMROOT")/System32:$PATH"
 		;;
 	*) echo "Unsupported system $(uname -s)-$(uname -m)." >&2; exit 1 ;;
 esac
