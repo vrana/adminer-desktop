@@ -22,6 +22,7 @@ function build_linux(string $version, string $adminer, string $plugin): void {
 		"$dir/adminer.php" => file_get_contents($adminer),
 		"$dir/adminer-plugins/login-ip.php" => file_get_contents($plugin),
 		"$dir/launcher.php" => file_get_contents("$root/src/launcher.php"),
+		"$dir/server.inc.php" => file_get_contents("$root/src/server.inc.php"),
 		"$dir/www/index.php" => file_get_contents("$root/src/www/index.php"),
 	);
 	foreach (glob("$php/license/*") as $license) {

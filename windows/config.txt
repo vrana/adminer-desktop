@@ -1,5 +1,5 @@
 ;!@Install@!UTF-8!
 Title="Adminer"
 Progress="no"
-RunProgram="php\\php.exe -n launcher.php"
+RunProgram="php\\php-win.exe -n -d extension_dir=php\\ext -d extension=ffi -d ffi.enable=1 app.php"
 ;!@InstallEnd@!

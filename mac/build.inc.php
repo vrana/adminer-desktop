@@ -27,6 +27,7 @@ function build_mac(string $version, string $adminer, string $plugin): void {
 		"$app/Resources/adminer.php" => file_get_contents($adminer),
 		"$app/Resources/adminer-plugins/login-ip.php" => file_get_contents($plugin),
 		"$app/Resources/launcher.php" => file_get_contents("$root/src/launcher.php"),
+		"$app/Resources/server.inc.php" => file_get_contents("$root/src/server.inc.php"),
 		"$app/Resources/www/index.php" => file_get_contents("$root/src/www/index.php"),
 	);
 	foreach (glob("$php/license/*") as $license) {

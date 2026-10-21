@@ -3,14 +3,15 @@
 
 const PHP_BUILD = 'nts-vs17-x64';
 const PHP_RELEASES = 'https://windows.php.net/downloads/releases/releases.json';
-// the extensions loaded by launcher.php and the libraries they import
+// the extensions loaded by server.inc.php and the libraries they import
 const PHP_FILES = array(
 	'php.exe', 'php8.dll', 'license.txt', 'readme-redist-bins.txt',
+	'php-win.exe', 'ext/php_ffi.dll', // app.php without a console, FFI starts the server without one too
 	'ext/php_mysqli.dll',
 	'ext/php_pgsql.dll', 'libpq.dll', 'libssl-3-x64.dll', 'libcrypto-3-x64.dll',
 	'ext/php_sqlite3.dll', 'libsqlite3.dll',
 );
-// the latest GitHub release, which is where PIE takes them from; loaded by launcher.php only if their client is installed
+// the latest GitHub release, which is where PIE takes them from; loaded by server.inc.php only if their client is installed
 const EXTENSIONS = array(
 	'sqlsrv' => 'microsoft/msphpsql_sqlsrv',
 	'oci8' => 'php/pecl-database-oci8',
@@ -27,7 +28,7 @@ const TOOLS = array(
 	'rcedit' => array('electron/rcedit', '~^rcedit-x64\.exe$~'),
 );
 
-/** Build dist/adminer-VERSION.exe
+/** Build dist/adminer-VERSION.exe, which shows Adminer in an app window
 * @param string $adminer path to adminer.php
 * @param string $plugin path to login-ip.php
 */
@@ -52,6 +53,9 @@ function build_windows(string $version, string $adminer, string $plugin): void {
 	echo "Assembling dist/build/\n";
 	remove_recursive($build);
 	copy_recursive("$root/src", $build);
+	unlink("$build/launcher.php"); // the browser variant of Linux and macOS, app.php starts the server here
+	copy_file(__DIR__ . "/app.php", "$build/app.php");
+	copy_file(__DIR__ . "/adminer.ico", "$build/adminer.ico"); // the window icon of app.php
 	copy_file($adminer, "$build/adminer.php");
 	write_file("$build/adminer-plugins/login-ip.php", file_get_contents($plugin));
 	unzip($php_zip, PHP_FILES, "$build/php");

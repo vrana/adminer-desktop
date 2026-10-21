@@ -8,12 +8,14 @@ browser.
 ## Run on Windows
 
 Download `adminer-<version>.exe` from the [releases](https://github.com/vrana/adminer-desktop/releases)
-and double-click it. A console window titled *Adminer* opens and your browser shows
-<http://127.0.0.1:23646/>. To stop Adminer, press Enter in the console or close it.
+and double-click it. Adminer opens in a window of its own, shown by Edge (or Chrome) without
+tabs and the address bar. Closing the window stops Adminer. Without Edge and Chrome, Adminer
+opens in your default browser at <http://127.0.0.1:23646/> and a message box keeps it running
+until you click OK.
 
 Nothing is installed. Each start unpacks PHP and Adminer to a temporary folder, which is
-deleted again when the console closes. Double-clicking the exe while Adminer is already running
-just opens the browser again.
+deleted again when Adminer stops. Double-clicking the exe while Adminer is already running
+opens another window.
 
 The exe is not signed yet (see the [code signing policy](#code-signing-policy)), so Windows may
 show *Windows protected your PC* at the first start. Click *More info* and *Run anyway*.
@@ -52,8 +54,8 @@ xattr -dr com.apple.quarantine Adminer.app
 ## Port
 
 The port is fixed so that bookmarks keep working. If another program uses it, the next free one
-of the following ten is taken and the console says so. Starting Adminer while it is already
-running just opens the browser again.
+of the following ten is taken; on Linux and macOS, the terminal says so. Starting Adminer while it
+is already running just opens the browser again, or another window on Windows.
 
 ## Databases
 
