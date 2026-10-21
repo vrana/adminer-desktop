@@ -1,0 +1,43 @@
+# Builds adminer-VERSION.exe from this repository, so that SignPath can verify where the signed exe comes from
+name: Build Windows
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Adminer version, the latest release if empty
+        required: false
+permissions:
+  contents: read
+jobs:
+  build:
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.5'
+          extensions: openssl, zip
+          tools: none
+      - run: php build.php $VERSION windows
+        env:
+          VERSION: ${{ inputs.version }} # passed through the environment, not pasted into the script
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - uses: actions/upload-artifact@v4
+        id: upload
+        with:
+          name: adminer-windows
+          path: dist/adminer-*.exe
+          retention-days: 7
+      # signing, once the SignPath Foundation accepts the project:
+      # - uses: signpath/github-action-submit-signing-request@v1
+      #   with:
+      #     api-token: ${{ secrets.SIGNPATH_API_TOKEN }}
+      #     organization-id: ...
+      #     project-slug: adminer-desktop
+      #     signing-policy-slug: release-signing
+      #     github-artifact-id: ${{ steps.upload.outputs.artifact-id }}
+      #     wait-for-completion: true
+      #     output-artifact-directory: dist/signed

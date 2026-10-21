@@ -15,8 +15,8 @@ Nothing is installed. Each start unpacks PHP and Adminer to a temporary folder, 
 deleted again when the console closes. Double-clicking the exe while Adminer is already running
 just opens the browser again.
 
-The exe is not signed, so Windows may show *Windows protected your PC* at the first start. Click
-*More info* and *Run anyway*.
+The exe is not signed yet (see the [code signing policy](#code-signing-policy)), so Windows may
+show *Windows protected your PC* at the first start. Click *More info* and *Run anyway*.
 
 ## Run on Linux
 
@@ -118,6 +118,29 @@ is built only on Windows, as the Visual C++ runtime is copied from the system, a
 ```bash
 php build.php 6.1.2
 ```
+
+Or name the platforms to build, e.g. `php build.php windows`. The Windows exe of a release is built
+by the workflow [Build Windows](.github/workflows/build-windows.yml) on GitHub Actions.
+
+## Code signing policy
+
+Free code signing provided by [SignPath.io](https://about.signpath.io), certificate by
+[SignPath Foundation](https://signpath.org). The signature is pending: the Windows exe stays unsigned
+until the SignPath Foundation accepts the project.
+
+Only the Windows exe is signed, and only when built from this repository by the workflow
+[Build Windows](.github/workflows/build-windows.yml). It contains binaries of other projects as
+they are published: PHP with its libraries and extensions, which are open source, and
+Microsoft's Visual C++ runtime, signed by Microsoft.
+
+- Committers and reviewers: [Jakub Vrána](https://github.com/vrana)
+- Approvers: [Jakub Vrána](https://github.com/vrana)
+
+Privacy: Adminer asks <https://www.adminer.org/version/> whether there is a newer version, at most
+once a day and once a week after a successful answer, sending its own version number. Apart from
+that, this program will not transfer any information to other networked systems unless
+specifically requested by the user or the person installing or operating it, e.g. by connecting to
+a database server.
 
 ## License
 

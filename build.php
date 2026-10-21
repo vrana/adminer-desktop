@@ -1,13 +1,14 @@
 <?php
 /* Assemble the Windows, Linux and macOS downloads in dist/.
-* Usage: php build.php [VERSION]
-* Adminer is downloaded from GitHub, the latest release unless a version is given.
+* Usage: php build.php [VERSION] [windows] [linux] [macos]
+* Adminer is downloaded from GitHub, the latest release unless a version is given. All platforms are built unless some are given.
 * PHP and the tools come from their official downloads, cached in cache/.
 * The Windows download is built only on Windows, the Visual C++ runtime is copied from the system.
 */
 
 // the latest patch release of this branch is taken, so a rebuild picks up PHP's security fixes
 const PHP_BRANCH = '8.5';
+const PLATFORMS = array('windows', 'linux', 'macos');
 const PLUGIN_URL ='https://raw.githubusercontent.com/vrana/adminer/v%s/plugins/login-ip.php';
 
 include __DIR__ . "/windows/build.inc.php";
@@ -18,7 +19,8 @@ $root = __DIR__;
 $cache = "$root/cache";
 $dist = "$root/dist";
 
-$version = $argv[1] ?? '';
+$platforms = array_intersect(array_slice($argv, 1), PLATFORMS) ?: PLATFORMS;
+$version = current(array_diff(array_slice($argv, 1), PLATFORMS)) ?: '';
 if ($version == "") {
 	preg_match('~/download/v([^/]+)/~', github_asset('vrana/adminer', '~^adminer-[\d.]+\.php$~'), $match);
 	$version = $match[1];
@@ -26,18 +28,24 @@ if ($version == "") {
 $adminer = cached_download("https://github.com/vrana/adminer/releases/download/v$version/adminer-$version.php");
 $plugin = cached_download(sprintf(PLUGIN_URL, $version));
 
-if (PHP_OS_FAMILY == 'Windows') {
-	echo "\nBuilding Windows\n";
-	build_windows($version, $adminer, $plugin);
-} else {
-	echo "\nSkipping Windows, the Visual C++ runtime is taken from the system\n";
+if (in_array('windows', $platforms)) {
+	if (PHP_OS_FAMILY == 'Windows') {
+		echo "\nBuilding Windows\n";
+		build_windows($version, $adminer, $plugin);
+	} else {
+		echo "\nSkipping Windows, the Visual C++ runtime is taken from the system\n";
+	}
 }
 
-echo "\nBuilding Linux\n";
-build_linux($version, $adminer, $plugin);
+if (in_array('linux', $platforms)) {
+	echo "\nBuilding Linux\n";
+	build_linux($version, $adminer, $plugin);
+}
 
-echo "\nBuilding macOS\n";
-build_mac($version, $adminer, $plugin);
+if (in_array('macos', $platforms)) {
+	echo "\nBuilding macOS\n";
+	build_mac($version, $adminer, $plugin);
+}
 
 /** Find the newest static PHP of PHP_BRANCH built by build-php.sh
 * @param string $platform e.g. linux-x86_64
@@ -88,7 +96,11 @@ function cached_download(string $url, bool $daily = false): string {
 	} else {
 		echo "Downloading $url\n";
 		// GitHub API refuses requests without User-Agent
-		$context = stream_context_create(array('http' => array('header' => "User-Agent: vrana/adminer-desktop\r\n")));
+		$header = "User-Agent: vrana/adminer-desktop\r\n";
+		if (getenv('GITHUB_TOKEN') && preg_match('~^https://api\.github\.com/~', $url)) {
+			$header .= "Authorization: Bearer " . getenv('GITHUB_TOKEN') . "\r\n"; // GitHub Actions share the anonymous limit of 60 requests an hour per IP address
+		}
+		$context = stream_context_create(array('http' => array('header' => $header)));
 		$file = @file_get_contents($url, false, $context);
 		if ($file === false) {
 			// the last status line, a redirect comes first
