@@ -21,7 +21,7 @@ platforms share `src/`.
 | `windows/build.inc.php` | `build_windows()`: downloads PHP, extensions and tools, writes `dist/adminer-<version>.exe`. |
 | `windows/config.txt` | 7-Zip installer config: `RunProgram="php\\php.exe -n launcher.php"`. |
 | `windows/adminer.manifest` | `asInvoker`, see below. |
-| `windows/adminer.ico` | Rendered once from `adminer/static/logo.svg` (16–256 px PNGs). |
+| `windows/adminer.ico` | Rendered once from `adminer/static/logo.svg`, each size separately (20, 24, 30, 32, 36, 40, 48, 64, 256 px PNGs), and the 16 px pixel art of Adminer's favicon (a 4-bit BMP; the rendered 16 px blurs). |
 | `linux/build.inc.php` | `build_linux()`: packs the newest PHP from `cache/static-php/linux-x86_64/`, writes `dist/adminer-<version>-linux-x86_64.tar.xz`. |
 | `linux/adminer` | The shell script a Linux user starts: `exec php/php -n launcher.php`. |
 | `build-php-github.php` | Starts the workflow by `gh`, waits for it and downloads its artifacts into `cache/static-php/<platform>/`. |
@@ -29,7 +29,7 @@ platforms share `src/`.
 | `mac/Info.plist` | The app's plist; `VERSION` is replaced by the Adminer version. |
 | `mac/adminer` | The app's executable: `open -a Terminal` with `adminer.command`. |
 | `mac/adminer.command` | Run in Terminal: `exec php/php -n launcher.php`, like `linux/adminer`. |
-| `mac/adminer.icns` | Rendered once from `adminer/static/logo.svg` (16–1024 px PNGs, one entry per size). |
+| `mac/adminer.icns` | Rendered once from `adminer/static/logo.svg` (32–1024 px PNGs, one entry per size), with the 16 px pixel art of Adminer's favicon. |
 
 The exe is `7zSD.sfx` + `config.txt` + a `.7z` of the payload, concatenated. The stub unpacks to
 `%TEMP%\7zSxxxxxxxx\`, runs `RunProgram` and deletes the folder when that program ends. Unpacked:
