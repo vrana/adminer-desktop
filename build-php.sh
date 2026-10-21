@@ -10,6 +10,8 @@ branch=$(sed -n "s/^const PHP_BRANCH = '\(.*\)';/\1/p" "$root/build.php")
 # not iconv, which Adminer uses only for importing UTF-16 files: its GNU libiconv is LGPL, which asks to allow relinking a static binary
 extensions=session,mysqli,mysqlnd,pgsql,sqlite3,zlib
 licenses="src_php-src lib_openssl lib_postgresql lib_sqlite lib_zlib"
+# the downloaded sources, kept between runs; deleting the folder fetches the newest ones, e.g. a new PHP release
+export DOWNLOAD_PATH="$root/cache/spc-downloads"
 case "$(uname -s)-$(uname -m)" in
 	Linux-x86_64) platform=linux-x86_64; spc=spc-linux-x86_64.tar.gz ;;
 	Darwin-arm64) platform=macos-arm64; spc=spc-macos-aarch64.tar.gz ;;
@@ -19,10 +21,11 @@ case "$(uname -s)-$(uname -m)" in
 		extensions="$extensions,sqlsrv"
 		# static-php-cli runs tar with C:\ paths, which Git's GNU tar reads as a remote host; Windows' own tar is bsdtar
 		PATH="$(cygpath -u "$SYSTEMROOT")/System32:$PATH"
+		DOWNLOAD_PATH=$(cygpath -m "$DOWNLOAD_PATH") # for spc.exe, a Windows program
 		;;
 	*) echo "Unsupported system $(uname -s)-$(uname -m)." >&2; exit 1 ;;
 esac
-# outside /mnt/c in WSL, where compiling would be slow
+# the build outside /mnt/c in WSL, where compiling would be slow
 work=/tmp/adminer-spc
 mkdir -p $work
 cd $work
