@@ -17,7 +17,7 @@ platforms share `src/`.
 | `src/www/index.php` | The docroot's only file. Host check, then `include "../adminer.php"`. |
 | `build.php` | Downloads Adminer, calls the platform builds; the shared helpers (`cached_download()`, `github_asset()`, `static_php()`, …). |
 | `build-php.sh` | Builds the static PHP with static-php-cli on x86_64 Linux or Apple Silicon macOS into `cache/static-php/<os>-<arch>/<version>/`. |
-| `.github/workflows/build-php.yml` | Runs `build-php.sh` on GitHub's `macos-15` and `windows-2022` runners, uploads `php-<platform>` artifacts. |
+| `.github/workflows/build-php.yml` | Runs `build-php.sh` on GitHub's `macos-15` runner, uploads the `php-macos-arm64` artifact. |
 | `windows/build.inc.php` | `build_windows()`: downloads PHP, extensions and tools, writes `dist/adminer-<version>.exe`. |
 | `windows/config.txt` | 7-Zip installer config: `RunProgram="php\\php.exe -n launcher.php"`. |
 | `windows/adminer.manifest` | `asInvoker`, see below. |
@@ -79,10 +79,9 @@ The static PHP of Linux and macOS is built first, by `build-php.sh`, which reads
 it takes a few minutes in `/tmp/adminer-spc`, installs static-php-cli's dependencies and a musl
 toolchain with sudo the first time, and needs `GITHUB_TOKEN` (e.g. `GITHUB_TOKEN=$(gh auth token)`)
 when the anonymous GitHub API limit is used up. For macOS, `php build-php-github.php` runs it on
-GitHub, together with Windows, where a static PHP (with `sqlsrv` compiled in) is being tried and
-not packed yet: the workflow builds what is pushed, and its artifacts are downloadable only when
-signed in, so nothing is published. Rerun both for PHP security releases; `build.php` packs the
-newest PHP of `PHP_BRANCH` it finds.
+GitHub: the workflow builds what is pushed, and its artifacts are downloadable only when signed in,
+so nothing is published. Rerun both for PHP security releases; `build.php` packs the newest PHP of
+`PHP_BRANCH` it finds.
 
 `php build.php [VERSION]` then builds the Linux and macOS archives on any system and the exe only
 on Windows (the Visual C++ runtime is copied from System32). Every download goes through
@@ -135,6 +134,12 @@ PHP had a release.
 - **A statically linked oci8 would stop the whole exe** without Instant Client, as `oci.dll` would
   become an import of the exe. As a separate DLL a missing `oci.dll` only means a startup warning,
   which the launcher avoids by loading oci8 only when `oci.dll` is in `PATH`.
+- **A static PHP for Windows was tried and not adopted.** `build-php.sh` builds one in Git Bash
+  (with `sqlsrv` compiled in, and Windows' own `tar` first in `PATH`: static-php-cli runs `tar` with
+  `C:\` paths, which Git's GNU tar reads as a remote host). Its `php.exe` worked with MySQL,
+  PostgreSQL, MS SQL and SQLite, but it still imports `libpq.dll`, which needs OpenSSL and
+  `vcruntime140.dll`, it cannot load extension DLLs, so no optional oci8, and it saved only 1.7 MB
+  (3.2 MB in 7z instead of the official 4.9 MB). The workflow no longer builds it.
 
 ## Testing
 

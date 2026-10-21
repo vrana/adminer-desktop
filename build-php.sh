@@ -1,6 +1,6 @@
 #!/bin/sh
 # Build the static PHP for the system it runs on into cache/static-php/OS-ARCH/VERSION/, which build.php packs.
-# Runs on x86_64 Linux (WSL works), on Apple Silicon macOS and in Git Bash on Windows; .github/workflows/build-php.yml runs it on the last two.
+# Runs on x86_64 Linux (WSL works), on Apple Silicon macOS, where .github/workflows/build-php.yml runs it, and in Git Bash on Windows, which is not used (see CLAUDE.md).
 # static-php-cli installs its build dependencies, with sudo on Linux; on Windows it needs Visual Studio.
 # Set GITHUB_TOKEN if GitHub refuses the downloads, it allows 60 anonymous API requests an hour.
 set -e

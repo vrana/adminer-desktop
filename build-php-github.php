@@ -1,5 +1,5 @@
 <?php
-// Build the static PHP on GitHub's runners (Apple Silicon macOS, Windows) and download it into cache/static-php/PLATFORM/, which build.php packs.
+// Build the static PHP on GitHub's runners (Apple Silicon macOS) and download it into cache/static-php/PLATFORM/, which build.php packs.
 // Needs gh signed in. The runners build what is pushed: .github/workflows/build-php.yml and build-php.sh.
 
 const REPOSITORY = 'vrana/adminer-desktop';

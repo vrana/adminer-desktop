@@ -11,8 +11,8 @@ jobs:
         include:
           - runner: macos-15
             platform: macos-arm64
-          - runner: windows-2022 # has Visual Studio, which static-php-cli needs on Windows
-            platform: windows-x64
+          # runner: windows-2022, platform: windows-x64 builds a static php.exe too (it has Visual Studio), but it still needs libpq.dll and OpenSSL
+          # and cannot load oci8, so the official PHP with its optional DLLs stays for 1.7 MB more
     runs-on: ${{ matrix.runner }}
     defaults:
       run:
