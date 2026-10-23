@@ -30,9 +30,9 @@ const TOOLS = array(
 
 /** Build dist/adminer-VERSION.exe, which shows Adminer in an app window
 * @param string $adminer path to adminer.php
-* @param string $plugin path to login-ip.php
+* @param array<string, string> $plugins [path next to adminer.php => content]
 */
-function build_windows(string $version, string $adminer, string $plugin): void {
+function build_windows(string $version, string $adminer, array $plugins): void {
 	global $root, $cache, $dist;
 	$build = "$dist/build";
 	$releases = json_decode(file_get_contents(cached_download(PHP_RELEASES, true)), true);
@@ -57,7 +57,9 @@ function build_windows(string $version, string $adminer, string $plugin): void {
 	copy_file(__DIR__ . "/app.php", "$build/app.php");
 	copy_file(__DIR__ . "/adminer.ico", "$build/adminer.ico"); // the window icon of app.php
 	copy_file($adminer, "$build/adminer.php");
-	write_file("$build/adminer-plugins/login-ip.php", file_get_contents($plugin));
+	foreach ($plugins as $name => $content) {
+		write_file("$build/$name", $content);
+	}
 	unzip($php_zip, PHP_FILES, "$build/php");
 	foreach ($extension_zips as $extension => $filename) {
 		// the DLL is named like the zip, with the version in it

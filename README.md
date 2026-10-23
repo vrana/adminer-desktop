@@ -80,6 +80,8 @@ opened directly.
 - the compiled `adminer.php` of the release, untouched
 - the [login-ip](https://github.com/vrana/adminer/blob/main/plugins/login-ip.php) plugin, which
   allows the empty password from the local computer
+- the optional [plugins](https://www.adminer.org/plugins/), disabled; enable them by the
+  Configuration link on the server page
 - on Windows, the official PHP for Windows, trimmed to the extensions Adminer needs, with its
   licenses, the [sqlsrv](https://github.com/microsoft/msphpsql_sqlsrv) and
   [oci8](https://github.com/php/pecl-database-oci8) extensions and the Visual C++ runtime

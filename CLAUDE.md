@@ -16,7 +16,7 @@ platforms share `src/`.
 | `src/launcher.php` | Run by the bundled PHP. Picks the port, starts `php -S`, opens the browser, waits for Enter. |
 | `src/server.inc.php` | What `launcher.php` and `windows/app.php` share: the port, `port_state()`, `server_command()`, `extensions()`. |
 | `src/www/index.php` | The docroot's only file. Host check, then `include "../adminer.php"`. |
-| `build.php` | Downloads Adminer, calls the platform builds; the shared helpers (`cached_download()`, `github_asset()`, `static_php()`, …). |
+| `build.php` | Downloads Adminer, calls the platform builds; the shared helpers (`cached_download()`, `github_asset()`, `static_php()`, …). `plugins()` takes login-ip and every plugin declaring `static $optional = true` from the tag's source zip, plus config.php and an `adminer-plugins.php` disabling the optional ones; users enable them on the Configuration page. |
 | `build-php.sh` | Builds the static PHP with static-php-cli on x86_64 Linux or Apple Silicon macOS into `cache/static-php/<os>-<arch>/<version>/`; the latest release of `PHP_BRANCH` unless `cache/spc-downloads/` already holds one, delete it for a newer PHP. |
 | `.github/workflows/build-php.yml` | Runs `build-php.sh` on GitHub's `macos-15` runner, uploads the `php-macos-arm64` artifact. |
 | `windows/build.inc.php` | `build_windows()`: downloads PHP, extensions and tools, writes `dist/adminer-<version>.exe`. |
@@ -37,7 +37,7 @@ The exe is `7zSD.sfx` + `config.txt` + a `.7z` of the payload, concatenated. The
 `%TEMP%\7zSxxxxxxxx\`, runs `RunProgram` and deletes the folder when that program ends. Unpacked:
 
 ```
-adminer.php  adminer-plugins/login-ip.php  server.inc.php  app.php  adminer.ico  www/index.php
+adminer.php  adminer-plugins.php  adminer-plugins/*.php  server.inc.php  app.php  adminer.ico  www/index.php
 php/  php.exe php-win.exe php8.dll + DLLs, ext/php_{mysqli,pgsql,sqlite3,sqlsrv,oci8,ffi}.dll
 ```
 
@@ -184,6 +184,6 @@ answers "Operation timed out", PDO `SQLSTATE[HY000] [2002]`.
 
 ## Rules
 
-- **Never edit `adminer.php`** or the plugin; they are downloaded from the release.
+- **Never edit `adminer.php`** or the plugins; they are downloaded from the release.
 - Match Adminer's style: tabs, doc comments in its voice.
 - Write only measured facts in comments and docs.

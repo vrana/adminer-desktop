@@ -3,9 +3,9 @@
 
 /** Build dist/adminer-VERSION-macos-arm64.zip with Adminer.app
 * @param string $adminer path to adminer.php
-* @param string $plugin path to login-ip.php
+* @param array<string, string> $plugins [path next to adminer.php => content]
 */
-function build_mac(string $version, string $adminer, string $plugin): void {
+function build_mac(string $version, string $adminer, array $plugins): void {
 	global $root, $dist;
 	// built by build-php.sh on GitHub's Apple Silicon runner, the linker signs it ad-hoc as arm64 requires
 	$php = static_php('macos-arm64', "run build-php-github.php");
@@ -25,11 +25,13 @@ function build_mac(string $version, string $adminer, string $plugin): void {
 		"$app/Resources/adminer.command" => file_get_contents(__DIR__ . "/adminer.command"),
 		"$app/Resources/php/php" => file_get_contents("$php/php"),
 		"$app/Resources/adminer.php" => file_get_contents($adminer),
-		"$app/Resources/adminer-plugins/login-ip.php" => file_get_contents($plugin),
 		"$app/Resources/launcher.php" => file_get_contents("$root/src/launcher.php"),
 		"$app/Resources/server.inc.php" => file_get_contents("$root/src/server.inc.php"),
 		"$app/Resources/www/index.php" => file_get_contents("$root/src/www/index.php"),
 	);
+	foreach ($plugins as $name => $content) {
+		$files["$app/Resources/$name"] = $content;
+	}
 	foreach (glob("$php/license/*") as $license) {
 		$files["$app/Resources/php/license/" . basename($license)] = file_get_contents($license);
 	}

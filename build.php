@@ -9,7 +9,7 @@
 // the latest patch release of this branch is taken, so a rebuild picks up PHP's security fixes
 const PHP_BRANCH = '8.5';
 const PLATFORMS = array('windows', 'linux', 'macos');
-const PLUGIN_URL ='https://raw.githubusercontent.com/vrana/adminer/v%s/plugins/login-ip.php';
+const SOURCE_URL = 'https://github.com/vrana/adminer/archive/refs/tags/v%s.zip'; // the plugins are taken from it
 
 include __DIR__ . "/windows/build.inc.php";
 include __DIR__ . "/linux/build.inc.php";
@@ -26,12 +26,12 @@ if ($version == "") {
 	$version = $match[1];
 }
 $adminer = cached_download("https://github.com/vrana/adminer/releases/download/v$version/adminer-$version.php");
-$plugin = cached_download(sprintf(PLUGIN_URL, $version));
+$plugins = plugins(cached_download(sprintf(SOURCE_URL, $version)));
 
 if (in_array('windows', $platforms)) {
 	if (PHP_OS_FAMILY == 'Windows') {
 		echo "\nBuilding Windows\n";
-		build_windows($version, $adminer, $plugin);
+		build_windows($version, $adminer, $plugins);
 	} else {
 		echo "\nSkipping Windows, the Visual C++ runtime is taken from the system\n";
 	}
@@ -39,12 +39,48 @@ if (in_array('windows', $platforms)) {
 
 if (in_array('linux', $platforms)) {
 	echo "\nBuilding Linux\n";
-	build_linux($version, $adminer, $plugin);
+	build_linux($version, $adminer, $plugins);
 }
 
 if (in_array('macos', $platforms)) {
 	echo "\nBuilding macOS\n";
-	build_mac($version, $adminer, $plugin);
+	build_mac($version, $adminer, $plugins);
+}
+
+/** Get the plugins to ship from the source zip: login-ip and the optional plugins disabled by default, which users enable in AdminerConfig
+* @return array<string, string> [path next to adminer.php => content]
+*/
+function plugins(string $filename): array {
+	$zip = new ZipArchive;
+	if ($zip->open($filename) !== true) {
+		fail("Cannot open $filename.");
+	}
+	$files = array();
+	for ($i = 0; $i < $zip->numFiles; $i++) {
+		if (preg_match('~^[^/]+/plugins/([^/]+\.php)$~', $zip->getNameIndex($i), $match)) {
+			$files[$match[1]] = $zip->getFromIndex($i);
+		}
+	}
+	$zip->close();
+	if (!isset($files['login-ip.php'])) {
+		fail("$filename has no plugins/login-ip.php.");
+	}
+
+	$return = array('adminer-plugins/login-ip.php' => $files['login-ip.php']);
+	$disabled = array();
+	foreach ($files as $name => $content) {
+		if (preg_match('~^\s*(public\s+)?static \$optional = true;~m', $content) && preg_match('~^class (\w+)~m', $content, $match)) {
+			$return["adminer-plugins/$name"] = $content;
+			$disabled[] = "\t(new $match[1])->disable(),\n";
+		}
+	}
+	echo "Optional plugins: " . count($disabled) . "\n";
+	if ($disabled) {
+		$return['adminer-plugins/config.php'] = $files['config.php'];
+		// the plugins in adminer-plugins/ which are not returned here are loaded enabled
+		$return['adminer-plugins.php'] = "<?php\n// users enable these on the Configuration page\nreturn array(\n" . implode("", $disabled) . ");\n";
+	}
+	return $return;
 }
 
 /** Find the newest static PHP of PHP_BRANCH built by build-php.sh
