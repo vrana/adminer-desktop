@@ -62,9 +62,8 @@ is already running just opens the browser again, or another window on Windows.
 - **MySQL and MariaDB, PostgreSQL, SQLite** work out of the box.
 - **MS SQL** works on Windows if Microsoft's ODBC Driver 17 or 18 for SQL Server is installed.
 - **Oracle** works on Windows if Oracle Instant Client is installed and its folder is in `PATH`.
-- **Elasticsearch, ClickHouse, Redis** work through Adminer's plugin drivers, but not encrypted:
-  the bundled PHP has no OpenSSL extension, so `https://` servers and Redis over TLS cannot be
-  reached.
+- **Elasticsearch, ClickHouse, Redis** work through Adminer's plugin drivers, also with `https://`
+  servers.
 
 Adminer normally refuses an empty password. Here it accepts one, because the server is reachable
 only from your own computer, so a local MySQL root without a password or an SQLite file can be

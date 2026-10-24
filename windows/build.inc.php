@@ -9,6 +9,7 @@ const PHP_FILES = array(
 	'php-win.exe', 'ext/php_ffi.dll', // app.php without a console, FFI starts the server without one too
 	'ext/php_mysqli.dll',
 	'ext/php_pgsql.dll', 'libpq.dll', 'libssl-3-x64.dll', 'libcrypto-3-x64.dll',
+	'ext/php_openssl.dll', // HTTPS of the plugin drivers, TLS of Redis and MySQL; libpq has its own use of the libraries above
 	'ext/php_sqlite3.dll', 'libsqlite3.dll',
 );
 // the latest GitHub release, which is where PIE takes them from; loaded by server.inc.php only if their client is installed

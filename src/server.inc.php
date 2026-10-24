@@ -54,7 +54,7 @@ function extensions(): array {
 	if (PHP_OS_FAMILY != 'Windows') {
 		return array(); // the static binary has its extensions built in
 	}
-	$return = array('mysqli', 'pgsql', 'sqlite3');
+	$return = array('mysqli', 'openssl', 'pgsql', 'sqlite3');
 	$system = getenv("SystemRoot") . "/System32";
 	if (file_exists("$system/msodbcsql18.dll") || file_exists("$system/msodbcsql17.dll")) {
 		$return[] = 'sqlsrv';

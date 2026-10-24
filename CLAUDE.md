@@ -68,14 +68,16 @@ reads the registry, as `reg.exe` would flash a console window.
 
 The Linux archive holds the same files in `adminer-<version>/`, with the static `php/php` and its
 `php/license/` instead of the DLLs, and the `adminer` script. It is unpacked once by the user, not
-on every start. The PHP is our own build, with only `session`, `mysqli`, `pgsql`, `sqlite3` and
-`zlib` besides the core: 14.8 MB, 4.5 MB in xz. Not `iconv`, which Adminer uses only for importing
+on every start. The PHP is our own build, with only `session`, `mysqli`, `openssl`, `pgsql`,
+`sqlite3` and `zlib` besides the core: 17.0 MB, 4.6 MB in xz; `openssl`, for HTTPS and TLS, added
+88 kB in xz, as libpq links OpenSSL anyway. It reads the CA certificates from `/etc/ssl/cert.pem`
+or `/etc/ssl/certs/`, tried only on Ubuntu. Not `iconv`, which Adminer uses only for importing
 UTF-16 files: its GNU libiconv is LGPL, whose relinking condition a static binary would have to
 meet, and it was 1 MB. `php/license/` has only the licenses of what is linked in (PHP, OpenSSL,
-PostgreSQL, SQLite, zlib); static-php-cli also writes those of libedit, ncurses and libxml2, which
-PostgreSQL's package passes to the linker but libpq does not use, and none of their code is in the
-binary. static-php-cli's prebuilt binaries were used first and dropped: the *common* build is
-UPX-packed, 13 MB in the archive and lacks `mysqli`, the *bulk* build is 30 MB. UPX was measured
+PostgreSQL, SQLite, zlib); static-php-cli also writes those of libedit, ncurses, libxml2 and
+libiconv, which PostgreSQL's package passes to the linker but libpq does not use, and none of their
+code is in the binary. static-php-cli's prebuilt binaries were used first and dropped: the *common*
+build is UPX-packed, 13 MB in the archive and lacks `mysqli`, the *bulk* build is 30 MB. UPX was measured
 and rejected: it saves 9.4 MB on disk (6.4 MB binary) but adds 1.2 MB to the xz download,
 65 ms to each of the two PHP starts and 8.7 MB of memory to each process, as the unpacked copy is
 private memory. The archive is written with `PharData`, which sets the executable bit of `adminer`
@@ -92,8 +94,8 @@ same lean build as on Linux, for arm64 (Apple Silicon only), built by `build-php
 `macos-15` runner, as `spc` needs a Mac; the artifact loses the executable bit, which the zip sets
 again. arm64 code must be signed: Apple's linker signs it ad-hoc (`LC_CODE_SIGNATURE`), so changing
 the binary afterwards, e.g. stripping it, would break the signature, and re-signing needs a Mac or
-`rcodesign`. The built PHP is 15.6 MB, needs macOS 12 and makes a 6.8 MB zip; static-php-cli's
-prebuilt *common* build used first was 44.5 MB, a 15 MB zip, and had `pdo_mysql` but no `mysqli`.
+`rcodesign`. The built PHP is 15.6 MB (before `openssl`), needs macOS 12 and makes a 6.8 MB zip;
+static-php-cli's prebuilt *common* build used first was 44.5 MB, a 15 MB zip, and had `pdo_mysql` but no `mysqli`.
 **Nothing of the macOS download has been run on a Mac yet**: only the zip's structure, permissions,
 plist and the binary's headers and signature were checked. Unverified: that the app opens Terminal
 as intended, whether Gatekeeper asks again for `adminer.command` inside an approved app, and the
@@ -153,9 +155,10 @@ PHP had a release.
   testing and could not be reproduced afterwards. Windows shares OPcache among processes of the
   same PHP build; the launcher gives each server its own `opcache.cache_id` (its process id).
   OPcache stays on: a page takes about 4 ms with it, 27 ms without.
-- **OpenSSL is needed only by `libpq.dll`.** `php_openssl.dll` was dropped: MySQL's
-  `caching_sha2_password` login works without it even after `FLUSH PRIVILEGES`, and Adminer calls
-  no `openssl_*` function. `libssl`/`libcrypto` stay for PostgreSQL and are 1.9 MB of the 7 MB.
+- **`php_openssl.dll` is needed for HTTPS and TLS**, not by Adminer's own code: without it PHP
+  has no `https` wrapper and no `ssl`/`tls` transport, so the HTTPS drivers, Redis over TLS and
+  MySQL with SSL fail. It adds 53 kB to the exe, as `libssl`/`libcrypto` are shipped for
+  `libpq.dll` anyway. Without a CA file it verifies against Windows' certificate store.
 - **sqlsrv imports only Windows' `ODBC32.dll`**, plus `msvcp140.dll` and `vcruntime140_1.dll`,
   which are shipped for it; Microsoft's ODBC driver is looked up only when connecting.
 - **A statically linked oci8 would stop the whole exe** without Instant Client, as `oci.dll` would

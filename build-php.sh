@@ -6,9 +6,9 @@
 set -e
 root=$(cd "$(dirname "$0")" && pwd)
 branch=$(sed -n "s/^const PHP_BRANCH = '\(.*\)';/\1/p" "$root/build.php")
-# what Adminer uses besides the core, zlib is for gzip exports
+# what Adminer uses besides the core, zlib is for gzip exports, openssl for HTTPS of the plugin drivers and TLS of Redis and MySQL
 # not iconv, which Adminer uses only for importing UTF-16 files: its GNU libiconv is LGPL, which asks to allow relinking a static binary
-extensions=session,mysqli,mysqlnd,pgsql,sqlite3,zlib
+extensions=session,mysqli,mysqlnd,openssl,pgsql,sqlite3,zlib
 licenses="src_php-src lib_openssl lib_postgresql lib_sqlite lib_zlib"
 # the downloaded sources, kept between runs; deleting the folder fetches the newest ones, e.g. a new PHP release
 export DOWNLOAD_PATH="$root/cache/spc-downloads"
