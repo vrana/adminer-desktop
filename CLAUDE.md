@@ -13,7 +13,7 @@ platforms share `src/`.
 
 | Path | What it is |
 | --- | --- |
-| `src/launcher.php` | Run by the bundled PHP on Linux and macOS. Picks the port, starts `php -S`, opens an `--app` window of Chrome, Edge, Brave or Chromium, or the default browser without them, waits for Enter. |
+| `src/launcher.php` | Run by the bundled PHP on Linux and macOS. Picks the port, starts `php -S`, opens an `--app` window of the default browser if it is Chrome, Edge, Brave or Chromium, otherwise of the first of them, or the default browser without them, waits for Enter. The default browser: NSWorkspace through `osascript -l JavaScript` on macOS (untried), `xdg-settings` and the Exec of its `.desktop` file on Linux. |
 | `src/server.inc.php` | What `launcher.php` and `windows/app.php` share: the port, `port_state()`, `server_command()`, `extensions()`. |
 | `src/www/index.php` | The docroot's only script. Host check, then `include "../adminer.php"`. |
 | `build.php` | Downloads Adminer, calls the platform builds; the shared helpers (`cached_download()`, `github_asset()`, `static_php()`, …). `plugins()` takes login-ip and every plugin declaring `static $optional = true` from the release's `adminer-<version>.zip`, plus config.php and an `adminer-plugins.php` disabling the optional ones; users enable them on the Configuration page. It also takes the designs plugin with `designs/*/*.css` into `www/designs/`, where users choose one on the Configuration page. `drivers()` compiles the plugin drivers in `DRIVERS` (ClickHouse, Elasticsearch, Redis: those needing no extension missing in some bundled PHP) by `compile.php drivers` of the same zip in `dist/drivers/`, which writes only `drivers/`: the sources work only with the development version, and the compiled files are on adminer.org only after the desktop is built. With PHP 8.5 the 6.2.0 drivers came out identical to adminer.org's, so their checksums match those inlined in `adminer.php`. The zip of the tag would not do: it lacks the submodules with the JUSH modules and PhpShrink. |
@@ -51,7 +51,8 @@ mode itself.
 `php-win.exe -S` does not serve, so `app.php` starts `php.exe -S` by `CreateProcessW` with
 `CREATE_NO_WINDOW` through FFI (`php_ffi.dll`, `-d ffi.enable=1`); PHP's `proc_open()` has no such
 flag and a console program started from one without a console gets a window of its own. It then runs
-the first of Chrome, Edge, Brave and Chromium, as `launcher.php` does, with `--app=URL` (a window
+the default browser if it is Chrome, Edge, Brave or Chromium, otherwise the first of them, as
+`launcher.php` does, with `--app=URL` (a window
 without tabs and the address bar) and the user's own profile: a profile of its own got signed in,
 synced the extensions and grew to 580 MB. Tried with Edge and Chrome. The browser already running takes
 the window over and the started process exits at once, so `app.php` polls the windows of class
@@ -64,8 +65,9 @@ favicon scaled up, so `app.php` sets the windows' icons itself by `WM_SETICON`, 
 polled every 0.1 s until the first window appears. The title bar is drawn by the browser from the
 favicon, the window's small icon does not show there; Adminer's own 16 px favicon looks right there,
 multi-size favicons, smooth or pixel art, looked blurred. Errors are message boxes; without these
-browsers, the default browser opens and a message box keeps the server until it is clicked. Nothing
-reads the registry, as `reg.exe` would flash a console window.
+browsers, the default browser opens and a message box keeps the server until it is clicked. The
+default browser is the executable in the open command of the `ProgId` of `https` in the registry,
+read by `RegGetValueW` through FFI, as `reg.exe` would flash a console window.
 
 The Linux archive holds the same files in `adminer-<version>/`, with the static `php/php` and its
 `php/license/` instead of the DLLs, and the `adminer` script. It is unpacked once by the user, not

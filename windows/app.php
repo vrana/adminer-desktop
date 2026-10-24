@@ -31,6 +31,8 @@ $user32 = FFI::cdef("
 	intptr_t SendMessageW(intptr_t window, uint32_t message, intptr_t wparam, intptr_t lparam);
 ", "user32.dll");
 $shell32 = FFI::cdef("void *ShellExecuteW(void *window, const uint16_t *operation, const uint16_t *file, const uint16_t *parameters, const uint16_t *directory, int show);", "shell32.dll");
+// the registry through FFI: reg.exe is a console program and would flash a console window
+$advapi32 = FFI::cdef("int RegGetValueW(intptr_t key, const uint16_t *subkey, const uint16_t *value, uint32_t flags, uint32_t *type, uint16_t *data, uint32_t *size);", "advapi32.dll");
 
 $port = PORT;
 for ($i = 0; ; $i++) {
@@ -156,11 +158,14 @@ function browser_windows(): array {
 	return $return;
 }
 
-/** Find a browser with app windows: Chrome, Edge, which Windows has, Brave or Chromium, like launcher.php
+/** Find a browser with app windows: the default one if it has them, otherwise Chrome, Edge, which Windows has, Brave or Chromium, like launcher.php
 * @return string path or '' if there is none
 */
 function app_browser(): string {
-	// not by the registry: reg.exe is a console program and would flash a console window
+	$default = default_browser();
+	if (in_array(strtolower(basename($default)), array("chrome.exe", "msedge.exe", "brave.exe")) && file_exists($default)) { // Chromium is chrome.exe too
+		return $default;
+	}
 	$executables = array(
 		"Google\\Chrome\\Application\\chrome.exe",
 		"Microsoft\\Edge\\Application\\msedge.exe",
@@ -176,6 +181,34 @@ function app_browser(): string {
 		}
 	}
 	return '';
+}
+
+/** Find the executable of the default browser
+* @return string path or '' if it is unknown
+*/
+function default_browser(): string {
+	$HKEY_CLASSES_ROOT = -0x80000000; // (HKEY) (LONG) 0x80000000, sign-extended to 64 bits
+	$HKEY_CURRENT_USER = $HKEY_CLASSES_ROOT + 1;
+	$program = registry_string($HKEY_CURRENT_USER, "Software\\Microsoft\\Windows\\Shell\\Associations\\UrlAssociations\\https\\UserChoice", "ProgId");
+	$command = ($program != "" ? registry_string($HKEY_CLASSES_ROOT, "$program\\shell\\open\\command", null) : "");
+	// e.g. "C:\Program Files\Google\Chrome\Application\chrome.exe" --single-argument %1
+	return (preg_match('~^"([^"]+)"|^(\S+)~', $command, $match) ? $match[1] . ($match[2] ?? "") : "");
+}
+
+/** Read a string from the registry
+* @param ?string $value null for the default value
+* @return string '' if there is none
+*/
+function registry_string(int $key, string $subkey, ?string $value): string {
+	global $advapi32, $windows;
+	$data = $windows->new("uint16_t[1024]");
+	$size = $windows->new("uint32_t");
+	$size->cdata = FFI::sizeof($data);
+	$RRF_RT_REG_SZ = 2; // REG_EXPAND_SZ is expanded to REG_SZ
+	if ($advapi32->RegGetValueW($key, wide($subkey), $value === null ? null : wide($value), $RRF_RT_REG_SZ, null, $data, FFI::addr($size)) != 0) {
+		return '';
+	}
+	return narrow($data, $size->cdata / 2 - 1); // the size includes the closing NUL
 }
 
 /** Start a program without a console window

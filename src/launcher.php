@@ -73,12 +73,17 @@ function open_browser(string $url): void {
 	}
 }
 
-/** Find a browser with app windows: Chrome, Edge, Brave or Chromium; Firefox and Safari have none
+/** Find a browser with app windows: the default one if it has them, otherwise Chrome, Edge, Brave or Chromium; Firefox and Safari have none
 * @return string path or '' if there is none
 */
 function app_browser(): string {
+	$default = default_browser();
 	if (PHP_OS_FAMILY == 'Darwin') {
-		foreach (array("Google Chrome", "Microsoft Edge", "Brave Browser", "Chromium") as $name) {
+		$names = array("Google Chrome", "Microsoft Edge", "Brave Browser", "Chromium");
+		if (in_array(basename($default, ".app"), $names) && is_dir($default)) {
+			return $default;
+		}
+		foreach ($names as $name) {
 			foreach (array("/Applications", getenv("HOME") . "/Applications") as $dir) {
 				if (is_dir("$dir/$name.app")) {
 					return "$dir/$name.app";
@@ -87,11 +92,54 @@ function app_browser(): string {
 		}
 		return '';
 	}
-	foreach (array("google-chrome", "google-chrome-stable", "microsoft-edge", "microsoft-edge-stable", "brave-browser", "chromium", "chromium-browser") as $name) {
-		foreach (explode(":", getenv("PATH")) as $dir) {
-			if ($dir != "" && is_executable("$dir/$name")) {
-				return "$dir/$name";
+	$names = array("google-chrome", "google-chrome-stable", "microsoft-edge", "microsoft-edge-stable", "brave-browser", "brave-browser-stable", "chromium", "chromium-browser");
+	if (in_array(basename($default), $names) && is_executable($default)) {
+		return $default;
+	}
+	foreach ($names as $name) {
+		$path = find_in_path($name);
+		if ($path != '') {
+			return $path;
+		}
+	}
+	return '';
+}
+
+/** Find the default browser: its app on macOS, its executable on Linux
+* @return string path or '' if it is unknown
+*/
+function default_browser(): string {
+	if (PHP_OS_FAMILY == 'Darwin') {
+		// NSWorkspace through JavaScript for Automation, which asks for no permission
+		$script = "ObjC.import('AppKit'); $.NSWorkspace.sharedWorkspace.URLForApplicationToOpenURL($.NSURL.URLWithString('https://www.adminer.org/')).path.js";
+		return trim((string) shell_exec("osascript -l JavaScript -e " . escapeshellarg($script) . " 2>/dev/null"));
+	}
+	$desktop = trim((string) shell_exec("xdg-settings get default-web-browser 2>/dev/null"));
+	if (!preg_match('~^[\w.-]+\.desktop$~', $desktop)) {
+		return '';
+	}
+	$data_dirs = explode(":", getenv("XDG_DATA_DIRS") ?: "/usr/local/share:/usr/share");
+	foreach (array_merge(array(getenv("XDG_DATA_HOME") ?: getenv("HOME") . "/.local/share"), $data_dirs) as $dir) {
+		$file = @file_get_contents("$dir/applications/$desktop");
+		if ($file && preg_match('~^Exec=(.*)~m', $file, $match)) {
+			// the first word which is not env and its variables, e.g. Exec=env BAMF_DESKTOP_FILE_HINT=... /snap/bin/chromium %U
+			foreach (preg_split('~\s+~', trim($match[1])) as $word) {
+				if ($word != 'env' && !preg_match('~^\w+=~', $word)) {
+					return ($word[0] == '/' ? $word : find_in_path($word));
+				}
 			}
+		}
+	}
+	return '';
+}
+
+/** Find an executable in PATH
+* @return string path or '' if there is none
+*/
+function find_in_path(string $name): string {
+	foreach (explode(":", getenv("PATH")) as $dir) {
+		if ($dir != "" && is_executable("$dir/$name")) {
+			return "$dir/$name";
 		}
 	}
 	return '';
