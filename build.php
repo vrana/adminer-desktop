@@ -47,7 +47,7 @@ if (in_array('macos', $platforms)) {
 	build_mac($version, $adminer, $plugins);
 }
 
-/** Get the plugins to ship from the source zip: login-ip and the optional plugins disabled by default, which users enable in AdminerConfig
+/** Get the plugins to ship from the source zip: login-ip, the optional plugins disabled by default, which users enable in AdminerConfig, and the designs chosen there
 * @return array<string, string> [path next to adminer.php => content]
 */
 function plugins(string $filename): array {
@@ -56,9 +56,12 @@ function plugins(string $filename): array {
 		fail("Cannot open $filename.");
 	}
 	$files = array();
+	$designs = array();
 	for ($i = 0; $i < $zip->numFiles; $i++) {
 		if (preg_match('~^[^/]+/plugins/([^/]+\.php)$~', $zip->getNameIndex($i), $match)) {
 			$files[$match[1]] = $zip->getFromIndex($i);
+		} elseif (preg_match('~^[^/]+/(designs/[^/]+/[^/]+\.css)$~', $zip->getNameIndex($i), $match)) {
+			$designs[$match[1]] = $zip->getFromIndex($i);
 		}
 	}
 	$zip->close();
@@ -75,11 +78,24 @@ function plugins(string $filename): array {
 		}
 	}
 	echo "Optional plugins: " . count($disabled) . "\n";
-	if ($disabled) {
-		$return['adminer-plugins/config.php'] = $files['config.php'];
-		// the plugins in adminer-plugins/ which are not returned here are loaded enabled
-		$return['adminer-plugins.php'] = "<?php\n// users enable these on the Configuration page\nreturn array(\n" . implode("", $disabled) . ");\n";
+	foreach ($designs as $path => $content) {
+		$return["www/$path"] = $content; // served by php -S as files
 	}
+	echo "Designs: " . count($designs) . "\n";
+	$return['adminer-plugins/designs.php'] = $files['designs.php'];
+	$return['adminer-plugins/config.php'] = $files['config.php'];
+	// the plugins in adminer-plugins/ which are not returned here are loaded enabled
+	$return['adminer-plugins.php'] = '<?php
+$designs = array();
+foreach (glob("www/designs/*/*.css") as $filename) {
+	$designs[substr($filename, 4)] = basename(dirname($filename)); // the plugin links them relative to the page in www/
+}
+
+// users enable these on the Configuration page
+return array(
+' . implode("", $disabled) . '	new AdminerDesigns($designs, true), // the design is chosen on the Configuration page
+);
+';
 	return $return;
 }
 

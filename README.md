@@ -70,8 +70,9 @@ opened directly.
 ## Security
 
 - The server listens only on `127.0.0.1`, so it cannot be reached from the network.
-- It answers only requests addressed to `127.0.0.1` or `localhost`. A web page you visit cannot
-  reach it by pointing its own domain name at your computer (DNS rebinding).
+- It answers only requests addressed to `127.0.0.1` or `localhost`, apart from the CSS files of the
+  designs. A web page you visit cannot reach it by pointing its own domain name at your computer
+  (DNS rebinding).
 - Other users of the same computer can reach the port. On a shared computer, keep in mind that
   SQLite without a password lets them read and write files with your rights while Adminer runs.
 
@@ -82,6 +83,8 @@ opened directly.
   allows the empty password from the local computer
 - the optional [plugins](https://www.adminer.org/plugins/), disabled; enable them by the
   Configuration link on the server page
+- the [designs](https://www.adminer.org/#extras) from Adminer's repository; choose one on the same
+  Configuration page
 - on Windows, the official PHP for Windows, trimmed to the extensions Adminer needs, with its
   licenses, the [sqlsrv](https://github.com/microsoft/msphpsql_sqlsrv) and
   [oci8](https://github.com/php/pecl-database-oci8) extensions and the Visual C++ runtime

@@ -15,8 +15,8 @@ platforms share `src/`.
 | --- | --- |
 | `src/launcher.php` | Run by the bundled PHP. Picks the port, starts `php -S`, opens the browser, waits for Enter. |
 | `src/server.inc.php` | What `launcher.php` and `windows/app.php` share: the port, `port_state()`, `server_command()`, `extensions()`. |
-| `src/www/index.php` | The docroot's only file. Host check, then `include "../adminer.php"`. |
-| `build.php` | Downloads Adminer, calls the platform builds; the shared helpers (`cached_download()`, `github_asset()`, `static_php()`, …). `plugins()` takes login-ip and every plugin declaring `static $optional = true` from the tag's source zip, plus config.php and an `adminer-plugins.php` disabling the optional ones; users enable them on the Configuration page. |
+| `src/www/index.php` | The docroot's only script. Host check, then `include "../adminer.php"`. |
+| `build.php` | Downloads Adminer, calls the platform builds; the shared helpers (`cached_download()`, `github_asset()`, `static_php()`, …). `plugins()` takes login-ip and every plugin declaring `static $optional = true` from the tag's source zip, plus config.php and an `adminer-plugins.php` disabling the optional ones; users enable them on the Configuration page. It also takes the designs plugin with `designs/*/*.css` into `www/designs/`, where users choose one on the Configuration page. |
 | `build-php.sh` | Builds the static PHP with static-php-cli on x86_64 Linux or Apple Silicon macOS into `cache/static-php/<os>-<arch>/<version>/`; the latest release of `PHP_BRANCH` unless `cache/spc-downloads/` already holds one, delete it for a newer PHP. |
 | `.github/workflows/build-php.yml` | Runs `build-php.sh` on GitHub's `macos-15` runner, uploads the `php-macos-arm64` artifact. |
 | `windows/build.inc.php` | `build_windows()`: downloads PHP, extensions and tools, writes `dist/adminer-<version>.exe`. |
@@ -37,9 +37,15 @@ The exe is `7zSD.sfx` + `config.txt` + a `.7z` of the payload, concatenated. The
 `%TEMP%\7zSxxxxxxxx\`, runs `RunProgram` and deletes the folder when that program ends. Unpacked:
 
 ```
-adminer.php  adminer-plugins.php  adminer-plugins/*.php  server.inc.php  app.php  adminer.ico  www/index.php
+adminer.php  adminer-plugins.php  adminer-plugins/*.php  server.inc.php  app.php  adminer.ico  www/index.php  www/designs/*/*.css
 php/  php.exe php-win.exe php8.dll + DLLs, ext/php_{mysqli,pgsql,sqlite3,sqlsrv,oci8,ffi}.dll
 ```
+
+`php -S` serves the designs in `www/designs/` as files, without the host check of `index.php`; they
+are the public CSS of the Adminer repository. The designs plugin links them relative to the page
+(`designs/<name>/adminer.css`) and reads the same path relative to `$_SERVER["SCRIPT_FILENAME"]`,
+which is `www/index.php` also after its `chdir()`, to find out whether a design handles the dark
+mode itself.
 
 `config.txt`'s `RunProgram` is `php-win.exe` (PHP built as a GUI program, no console) running `app.php`.
 `php-win.exe -S` does not serve, so `app.php` starts `php.exe -S` by `CreateProcessW` with
