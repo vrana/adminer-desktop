@@ -62,6 +62,9 @@ is already running just opens the browser again, or another window on Windows.
 - **MySQL and MariaDB, PostgreSQL, SQLite** work out of the box.
 - **MS SQL** works on Windows if Microsoft's ODBC Driver 17 or 18 for SQL Server is installed.
 - **Oracle** works on Windows if Oracle Instant Client is installed and its folder is in `PATH`.
+- **Elasticsearch, ClickHouse, Redis** work through Adminer's plugin drivers, but not encrypted:
+  the bundled PHP has no OpenSSL extension, so `https://` servers and Redis over TLS cannot be
+  reached.
 
 Adminer normally refuses an empty password. Here it accepts one, because the server is reachable
 only from your own computer, so a local MySQL root without a password or an SQLite file can be
@@ -85,6 +88,9 @@ opened directly.
   Configuration link on the server page
 - the [designs](https://www.adminer.org/#extras) from Adminer's repository; choose one on the same
   Configuration page
+- the plugin [drivers](https://www.adminer.org/plugins/#use) for ClickHouse, Elasticsearch and
+  Redis, compiled from the release's sources into the same files as on adminer.org; the others
+  need PHP extensions which are not bundled
 - on Windows, the official PHP for Windows, trimmed to the extensions Adminer needs, with its
   licenses, the [sqlsrv](https://github.com/microsoft/msphpsql_sqlsrv) and
   [oci8](https://github.com/php/pecl-database-oci8) extensions and the Visual C++ runtime

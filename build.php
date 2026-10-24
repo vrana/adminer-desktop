@@ -9,7 +9,10 @@
 // the latest patch release of this branch is taken, so a rebuild picks up PHP's security fixes
 const PHP_BRANCH = '8.5';
 const PLATFORMS = array('windows', 'linux', 'macos');
-const SOURCE_URL = 'https://github.com/vrana/adminer/archive/refs/tags/v%s.zip'; // the plugins are taken from it
+// the plugins are taken from it and the drivers compiled; unlike the zip of the tag, it has the submodules which compile.php needs
+const SOURCE_URL = 'https://github.com/vrana/adminer/releases/download/v%1$s/adminer-%1$s.zip';
+// the plugin drivers which need no extension missing in some bundled PHP
+const DRIVERS = array('clickhouse', 'elastic', 'redis');
 
 include __DIR__ . "/windows/build.inc.php";
 include __DIR__ . "/linux/build.inc.php";
@@ -26,7 +29,8 @@ if ($version == "") {
 	$version = $match[1];
 }
 $adminer = cached_download("https://github.com/vrana/adminer/releases/download/v$version/adminer-$version.php");
-$plugins = plugins(cached_download(sprintf(SOURCE_URL, $version)));
+$source = cached_download(sprintf(SOURCE_URL, $version));
+$plugins = plugins($source) + drivers($source);
 
 if (in_array('windows', $platforms)) {
 	if (PHP_OS_FAMILY == 'Windows') {
@@ -96,6 +100,40 @@ return array(
 ' . implode("", $disabled) . '	new AdminerDesigns($designs, true), // the design is chosen on the Configuration page
 );
 ';
+	return $return;
+}
+
+/** Compile the plugin drivers in DRIVERS from the source zip by its compile.php, as the release does
+* The sources work only with the development version and the compiled files are on adminer.org only after the desktop is built. compile.php writes nothing but drivers/, adminer.php is the downloaded one.
+* @return array<string, string> [path next to adminer.php => content]
+*/
+function drivers(string $filename): array {
+	global $dist;
+	$dir = "$dist/drivers";
+	remove_recursive($dir);
+	echo "Compiling the drivers\n";
+	$zip = new ZipArchive;
+	if ($zip->open($filename) !== true || !$zip->extractTo("$dir/source")) {
+		fail("Cannot extract $filename.");
+	}
+	$zip->close();
+	$compile = glob("$dir/source/*/compile.php");
+	if (!$compile) {
+		fail("$filename has no compile.php.");
+	}
+	if (!mkdir("$dir/compiled")) {
+		fail("Cannot create $dir/compiled.");
+	}
+	run(array(PHP_BINARY, $compile[0], 'drivers'), "$dir/compiled"); // it writes drivers/ to the working directory
+	$return = array();
+	foreach (DRIVERS as $driver) {
+		$content = @file_get_contents("$dir/compiled/drivers/$driver.php");
+		if ($content === false) {
+			fail("compile.php did not build the driver $driver.");
+		}
+		$return["adminer-plugins/$driver.php"] = $content; // Adminer loads every file there
+	}
+	remove_recursive($dir);
 	return $return;
 }
 
