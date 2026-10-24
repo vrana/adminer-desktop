@@ -13,7 +13,7 @@ platforms share `src/`.
 
 | Path | What it is |
 | --- | --- |
-| `src/launcher.php` | Run by the bundled PHP. Picks the port, starts `php -S`, opens the browser, waits for Enter. |
+| `src/launcher.php` | Run by the bundled PHP on Linux and macOS. Picks the port, starts `php -S`, opens an `--app` window of Chrome, Edge, Brave or Chromium, or the default browser without them, waits for Enter. |
 | `src/server.inc.php` | What `launcher.php` and `windows/app.php` share: the port, `port_state()`, `server_command()`, `extensions()`. |
 | `src/www/index.php` | The docroot's only script. Host check, then `include "../adminer.php"`. |
 | `build.php` | Downloads Adminer, calls the platform builds; the shared helpers (`cached_download()`, `github_asset()`, `static_php()`, …). `plugins()` takes login-ip and every plugin declaring `static $optional = true` from the release's `adminer-<version>.zip`, plus config.php and an `adminer-plugins.php` disabling the optional ones; users enable them on the Configuration page. It also takes the designs plugin with `designs/*/*.css` into `www/designs/`, where users choose one on the Configuration page. `drivers()` compiles the plugin drivers in `DRIVERS` (ClickHouse, Elasticsearch, Redis: those needing no extension missing in some bundled PHP) by `compile.php drivers` of the same zip in `dist/drivers/`, which writes only `drivers/`: the sources work only with the development version, and the compiled files are on adminer.org only after the desktop is built. With PHP 8.5 the 6.2.0 drivers came out identical to adminer.org's, so their checksums match those inlined in `adminer.php`. The zip of the tag would not do: it lacks the submodules with the JUSH modules and PhpShrink. |
@@ -21,7 +21,7 @@ platforms share `src/`.
 | `.github/workflows/build-php.yml` | Runs `build-php.sh` on GitHub's `macos-15` runner, uploads the `php-macos-arm64` artifact. |
 | `windows/build.inc.php` | `build_windows()`: downloads PHP, extensions and tools, writes `dist/adminer-<version>.exe`. |
 | `windows/config.txt` | 7-Zip installer config: `RunProgram` is `php-win.exe` with FFI running `app.php`. |
-| `windows/app.php` | Run by `php-win.exe` from `config.txt`: the server without a console, Adminer in an app window of Edge or Chrome. Windows has no `launcher.php`, the browser variant of Linux and macOS. |
+| `windows/app.php` | Run by `php-win.exe` from `config.txt`: the server without a console, Adminer in an app window of Chrome, Edge, Brave or Chromium. Windows has no `launcher.php`, the browser variant of Linux and macOS. |
 | `windows/adminer.manifest` | `asInvoker`, see below. |
 | `windows/adminer.ico` | Rendered once from `adminer/static/logo.svg`, each size separately (20, 24, 30, 32, 36, 40, 48, 64, 256 px PNGs), and the 16 px pixel art of Adminer's favicon (a 4-bit BMP; the rendered 16 px blurs): the exe's icon and the window icons of `app.php`. |
 | `linux/build.inc.php` | `build_linux()`: packs the newest PHP from `cache/static-php/linux-x86_64/`, writes `dist/adminer-<version>-linux-x86_64.tar.xz`. |
@@ -51,19 +51,20 @@ mode itself.
 `php-win.exe -S` does not serve, so `app.php` starts `php.exe -S` by `CreateProcessW` with
 `CREATE_NO_WINDOW` through FFI (`php_ffi.dll`, `-d ffi.enable=1`); PHP's `proc_open()` has no such
 flag and a console program started from one without a console gets a window of its own. It then runs
-Edge, or Chrome, with `--app=URL` (a window without tabs and the address bar) and the user's own
-profile: a profile of its own got signed in, synced the extensions and grew to 580 MB. The browser
-already running takes the window over and the started process exits at once, so `app.php` polls the
-windows of class `Chrome_WidgetWin_1` every half second instead: those that were not there before
-and are titled by Adminer are ours, also those opened by a second start. When all of them are gone,
+the first of Chrome, Edge, Brave and Chromium, as `launcher.php` does, with `--app=URL` (a window
+without tabs and the address bar) and the user's own profile: a profile of its own got signed in,
+synced the extensions and grew to 580 MB. Tried with Edge and Chrome. The browser already running takes
+the window over and the started process exits at once, so `app.php` polls the windows of class
+`Chrome_WidgetWin_1` every half second instead: those that were not there before and are titled by
+Adminer are ours, also those opened by a second start. When all of them are gone,
 `app.php` stops the server. Window handles are declared `intptr_t` in the FFI definitions: casting
 the `void *` of an `EnumWindows` callback crashed PHP. The browser gives the taskbar Adminer's 16 px
 favicon scaled up, so `app.php` sets the windows' icons itself by `WM_SETICON`, loaded from
 `adminer.ico` at 16 and 24 px times the window's DPI / 96, again when the browser replaces them,
 polled every 0.1 s until the first window appears. The title bar is drawn by the browser from the
 favicon, the window's small icon does not show there; Adminer's own 16 px favicon looks right there,
-multi-size favicons, smooth or pixel art, looked blurred. Errors are message boxes; without Edge and
-Chrome, the default browser opens and a message box keeps the server until it is clicked. Nothing
+multi-size favicons, smooth or pixel art, looked blurred. Errors are message boxes; without these
+browsers, the default browser opens and a message box keeps the server until it is clicked. Nothing
 reads the registry, as `reg.exe` would flash a console window.
 
 The Linux archive holds the same files in `adminer-<version>/`, with the static `php/php` and its
@@ -186,8 +187,9 @@ Use a port other than 23646, which a running Adminer may hold, and stop the serv
 the command line rather than every `php.exe`. A wrong `Host` header must get 403.
 
 On Linux, the launcher can run without opening anything with a fake `xdg-open` first in `PATH` (a
-script that only logs its argument) and stdin kept open (`sleep 60 | adminer-<version>/adminer`);
-it stops when stdin ends. The bundled PHP has no curl, so run a curl script with another PHP. A
+script that only logs its argument; a fake `google-chrome` gets `--app=URL` instead, in a session of
+its own by `setsid`; a WSL with WSLg would show a real browser's window) and stdin kept open
+(`sleep 60 | adminer-<version>/adminer`); it stops when stdin ends. The bundled PHP has no curl, so run a curl script with another PHP. A
 database server the test machine cannot reach still shows which extension Adminer picked: mysqli
 answers "Operation timed out", PDO `SQLSTATE[HY000] [2002]`.
 

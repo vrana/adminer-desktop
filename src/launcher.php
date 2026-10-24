@@ -49,17 +49,52 @@ echo "Press Enter or close this window to stop it.\n";
 fgets(STDIN);
 proc_terminate($server);
 
+/** Show Adminer in an app window of a Chromium browser, without tabs and the address bar, or in the default browser */
 function open_browser(string $url): void {
 	switch (PHP_OS_FAMILY) {
 		case 'Windows':
 			pclose(popen("start \"\" \"$url\"", 'r'));
 			break;
 		case 'Darwin':
-			exec("open " . escapeshellarg($url));
+			$browser = app_browser();
+			// open passes --args only to an app it starts, so -n starts another one, which hands the window to the running browser
+			exec($browser != ''
+				? "open -na " . escapeshellarg($browser) . " --args " . escapeshellarg("--app=$url")
+				: "open " . escapeshellarg($url)
+			);
 			break;
 		default:
-			exec("xdg-open " . escapeshellarg($url) . " > /dev/null 2>&1 &");
+			$browser = app_browser();
+			// setsid: a browser started from the terminal would end with it, also with the user's other windows
+			exec(($browser != ''
+				? "setsid " . escapeshellarg($browser) . " " . escapeshellarg("--app=$url")
+				: "xdg-open " . escapeshellarg($url)) . " > /dev/null 2>&1 &"
+			);
 	}
+}
+
+/** Find a browser with app windows: Chrome, Edge, Brave or Chromium; Firefox and Safari have none
+* @return string path or '' if there is none
+*/
+function app_browser(): string {
+	if (PHP_OS_FAMILY == 'Darwin') {
+		foreach (array("Google Chrome", "Microsoft Edge", "Brave Browser", "Chromium") as $name) {
+			foreach (array("/Applications", getenv("HOME") . "/Applications") as $dir) {
+				if (is_dir("$dir/$name.app")) {
+					return "$dir/$name.app";
+				}
+			}
+		}
+		return '';
+	}
+	foreach (array("google-chrome", "google-chrome-stable", "microsoft-edge", "microsoft-edge-stable", "brave-browser", "chromium", "chromium-browser") as $name) {
+		foreach (explode(":", getenv("PATH")) as $dir) {
+			if ($dir != "" && is_executable("$dir/$name")) {
+				return "$dir/$name";
+			}
+		}
+	}
+	return '';
 }
 
 /** @return never */

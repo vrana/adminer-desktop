@@ -2,16 +2,16 @@
 
 [Adminer](https://www.adminer.org/) with its own PHP, for people who don't have PHP or don't want
 to set up a web server: one `adminer.exe` of about 7 MB for Windows, a `.tar.xz` of about 5 MB for
-Linux, an `Adminer.app` in a `.zip` of about 7 MB for macOS. Start it and Adminer opens in your
-browser.
+Linux, an `Adminer.app` in a `.zip` of about 7 MB for macOS. Start it and Adminer opens in a window
+of your browser.
 
 ## Run on Windows
 
 Download `adminer-<version>.exe` from the [releases](https://github.com/vrana/adminer-desktop/releases)
-and double-click it. Adminer opens in a window of its own, shown by Edge (or Chrome) without
-tabs and the address bar. Closing the window stops Adminer. Without Edge and Chrome, Adminer
-opens in your default browser at <http://127.0.0.1:23646/> and a message box keeps it running
-until you click OK.
+and double-click it. Adminer opens in a window of its own without tabs and the address bar, shown
+by Chrome, Edge, Brave or Chromium, the first one you have; Windows comes with Edge. Closing the
+window stops Adminer. Without them, Adminer opens in your default browser at
+<http://127.0.0.1:23646/> and a message box keeps it running until you click OK.
 
 Nothing is installed. Each start unpacks PHP and Adminer to a temporary folder, which is
 deleted again when Adminer stops. Double-clicking the exe while Adminer is already running
@@ -31,16 +31,18 @@ tar -xf adminer-<version>-linux-x86_64.tar.xz
 adminer-<version>/adminer
 ```
 
-Your browser opens <http://127.0.0.1:23646/>. To stop Adminer, press Enter in the terminal. The PHP
-inside is statically linked, so it needs no libraries from your distribution.
+Adminer opens at <http://127.0.0.1:23646/> in a window without tabs and the address bar if you have
+Chrome, Edge, Brave or Chromium, otherwise in your default browser. To stop Adminer, press Enter in
+the terminal. The PHP inside is statically linked, so it needs no libraries from your distribution.
 
 ## Run on macOS
 
 Download `adminer-<version>-macos-arm64.zip` from the
 [releases](https://github.com/vrana/adminer-desktop/releases) and open it, which unpacks
-`Adminer.app`. Open the app: a Terminal window runs Adminer and your browser shows
-<http://127.0.0.1:23646/>. To stop Adminer, press Enter in the Terminal window. It needs a Mac with
-Apple Silicon and macOS 12 or newer.
+`Adminer.app`. Open the app: a Terminal window runs Adminer, which opens at
+<http://127.0.0.1:23646/> in a window without tabs and the address bar if you have Chrome, Edge,
+Brave or Chromium, otherwise in your default browser. To stop Adminer, press Enter in the Terminal
+window. It needs a Mac with Apple Silicon and macOS 12 or newer.
 
 The app is not signed by a registered Apple developer, so macOS refuses to open it at first. Go to
 *System Settings › Privacy & Security* and click *Open Anyway* next to the message about Adminer.

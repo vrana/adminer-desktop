@@ -1,5 +1,5 @@
 <?php
-/** Start Adminer's server without a console and show it in an app window of Edge or Chrome, stop the server when the window closes. */
+/** Start Adminer's server without a console and show it in an app window of Chrome, Edge, Brave or Chromium, stop the server when the window closes. */
 // run by php-win.exe, which has no console; php-win.exe -S does not serve, so the server is php.exe started by CreateProcessW(CREATE_NO_WINDOW)
 // the browser runs with the user's profile: a profile of its own got signed in, synced the extensions and grew to 580 MB
 
@@ -140,7 +140,7 @@ function set_icon(int $window): void {
 	}
 }
 
-/** Find the visible windows of Chromium browsers, Edge too
+/** Find the visible windows of Chromium browsers, all of app_browser()
 * @return string[] [window handle => title]
 */
 function browser_windows(): array {
@@ -156,13 +156,20 @@ function browser_windows(): array {
 	return $return;
 }
 
-/** Find Edge, which Windows has, or Chrome
+/** Find a browser with app windows: Chrome, Edge, which Windows has, Brave or Chromium, like launcher.php
 * @return string path or '' if there is none
 */
 function app_browser(): string {
 	// not by the registry: reg.exe is a console program and would flash a console window
-	foreach (array("Microsoft\\Edge\\Application\\msedge.exe", "Google\\Chrome\\Application\\chrome.exe") as $executable) {
-		foreach (array("ProgramFiles(x86)", "ProgramFiles", "LOCALAPPDATA") as $variable) {
+	$executables = array(
+		"Google\\Chrome\\Application\\chrome.exe",
+		"Microsoft\\Edge\\Application\\msedge.exe",
+		"BraveSoftware\\Brave-Browser\\Application\\brave.exe",
+		"Chromium\\Application\\chrome.exe",
+	);
+	foreach ($executables as $executable) {
+		// ProgramFiles first: Chrome was 32-bit in ProgramFiles(x86), where Edge still is
+		foreach (array("ProgramFiles", "ProgramFiles(x86)", "LOCALAPPDATA") as $variable) {
 			if (getenv($variable) && file_exists(getenv($variable) . "\\$executable")) {
 				return getenv($variable) . "\\$executable";
 			}
