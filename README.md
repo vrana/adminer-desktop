@@ -23,8 +23,8 @@ show *Windows protected your PC* at the first start. Click *More info* and *Run 
 ## Run on Linux
 
 Download `adminer-<version>-linux-x86_64.tar.xz` from the
-[releases](https://github.com/vrana/adminer-desktop/releases), unpack it and start `adminer` in a
-terminal:
+[releases](https://github.com/vrana/adminer-desktop/releases), unpack it and start `adminer`. Started
+from a file manager, it opens a terminal window. In a terminal:
 
 ```bash
 tar -xf adminer-<version>-linux-x86_64.tar.xz

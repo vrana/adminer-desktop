@@ -1,3 +1,17 @@
 #!/bin/sh
 # Start Adminer and open it in the browser
-cd "$(dirname "$0")/lib" && exec php/php -n launcher.php
+dir=$(cd "$(dirname "$0")" && pwd)
+# a file manager starts us without a terminal, where the launcher would stop the server at once as it stops on Enter; a pipe keeps it for scripts
+if [ ! -t 0 ] && [ ! -p /dev/stdin ] && [ -z "$ADMINER_TERMINAL" ]; then
+	export ADMINER_TERMINAL=1 # in case the terminal does not give us one either
+	for terminal in x-terminal-emulator gnome-terminal konsole xfce4-terminal mate-terminal urxvt rxvt xterm; do
+		if command -v $terminal > /dev/null; then
+			case $terminal in
+				gnome-terminal) exec $terminal -- "$dir/adminer";;
+				xfce4-terminal|mate-terminal) exec $terminal -x "$dir/adminer";;
+				*) exec $terminal -e "$dir/adminer";;
+			esac
+		fi
+	done
+fi
+cd "$dir/lib" && exec php/php -n launcher.php

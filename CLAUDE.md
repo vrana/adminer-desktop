@@ -25,7 +25,7 @@ platforms share `src/`.
 | `windows/adminer.manifest` | `asInvoker`, see below. |
 | `windows/adminer.ico` | Rendered once from `adminer/static/logo.svg`, each size separately (20, 24, 30, 32, 36, 40, 48, 64, 256 px PNGs), and the 16 px pixel art of Adminer's favicon (a 4-bit BMP; the rendered 16 px blurs): the exe's icon and the window icons of `app.php`. |
 | `linux/build.inc.php` | `build_linux()`: packs the newest PHP from `cache/static-php/linux-x86_64/`, writes `dist/adminer-<version>-linux-x86_64.tar.xz`. |
-| `linux/adminer` | The shell script a Linux user starts: `exec php/php -n launcher.php` in `lib/`. |
+| `linux/adminer` | The shell script a Linux user starts: `exec php/php -n launcher.php` in `lib/`. Started without a terminal and a pipe as stdin, e.g. from a file manager, it runs itself in the first terminal emulator it finds: the launcher would read the end of stdin and stop the server at once, as Puppy Linux showed by double-clicking it. Tried on Puppy Linux, where it opened rxvt-unicode, and with fake `xterm` and `gnome-terminal`. |
 | `build-php-github.php` | Starts the workflow by `gh`, waits for it and downloads its artifacts into `cache/static-php/<platform>/`. |
 | `mac/build.inc.php` | `build_mac()`: packs the newest PHP from `cache/static-php/macos-arm64/`, writes `dist/adminer-<version>-macos-arm64.zip`. |
 | `mac/Info.plist` | The app's plist; `VERSION` is replaced by the Adminer version. |
@@ -192,7 +192,8 @@ the command line rather than every `php.exe`. A wrong `Host` header must get 403
 On Linux, the launcher can run without opening anything with a fake `xdg-open` first in `PATH` (a
 script that only logs its argument; a fake `google-chrome` gets `--app=URL` instead, in a session of
 its own by `setsid`; a WSL with WSLg would show a real browser's window) and stdin kept open
-(`sleep 60 | adminer-<version>/adminer`); it stops when stdin ends. The bundled PHP has no curl, so run a curl script with another PHP. A
+(`sleep 60 | adminer-<version>/adminer`); it stops when stdin ends. The pipe also keeps it from opening a
+terminal emulator. The bundled PHP has no curl, so run a curl script with another PHP. A
 database server the test machine cannot reach still shows which extension Adminer picked: mysqli
 answers "Operation timed out", PDO `SQLSTATE[HY000] [2002]`.
 
