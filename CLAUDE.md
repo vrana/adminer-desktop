@@ -25,12 +25,12 @@ platforms share `src/`.
 | `windows/adminer.manifest` | `asInvoker`, see below. |
 | `windows/adminer.ico` | Rendered once from `adminer/static/logo.svg`, each size separately (20, 24, 30, 32, 36, 40, 48, 64, 256 px PNGs), and the 16 px pixel art of Adminer's favicon (a 4-bit BMP; the rendered 16 px blurs): the exe's icon and the window icons of `app.php`. |
 | `linux/build.inc.php` | `build_linux()`: packs the newest PHP from `cache/static-php/linux-x86_64/`, writes `dist/adminer-<version>-linux-x86_64.tar.xz`. |
-| `linux/adminer` | The shell script a Linux user starts: `exec php/php -n launcher.php`. |
+| `linux/adminer` | The shell script a Linux user starts: `exec php/php -n launcher.php` in `lib/`. |
 | `build-php-github.php` | Starts the workflow by `gh`, waits for it and downloads its artifacts into `cache/static-php/<platform>/`. |
 | `mac/build.inc.php` | `build_mac()`: packs the newest PHP from `cache/static-php/macos-arm64/`, writes `dist/adminer-<version>-macos-arm64.zip`. |
 | `mac/Info.plist` | The app's plist; `VERSION` is replaced by the Adminer version. |
 | `mac/adminer` | The app's executable: `open -a Terminal` with `adminer.command`. |
-| `mac/adminer.command` | Run in Terminal: `exec php/php -n launcher.php`, like `linux/adminer`. |
+| `mac/adminer.command` | Run in Terminal: `exec php/php -n launcher.php`, like `linux/adminer` but in its own directory. |
 | `mac/adminer.icns` | Rendered once from `adminer/static/logo.svg` (32–1024 px PNGs, one entry per size), with the 16 px pixel art of Adminer's favicon. |
 
 The exe is `7zSD.sfx` + `config.txt` + a `.7z` of the payload, concatenated. The stub unpacks to
@@ -69,10 +69,11 @@ browsers, the default browser opens and a message box keeps the server until it 
 default browser is the executable in the open command of the `ProgId` of `https` in the registry,
 read by `RegGetValueW` through FFI, as `reg.exe` would flash a console window.
 
-The Linux archive holds the same files in `adminer-<version>/`, with the static `php/php` and its
-`php/license/` instead of the DLLs, and the `adminer` script. It is unpacked once by the user, not
-on every start. The PHP is our own build, with only `session`, `mysqli`, `openssl`, `pgsql`,
-`sqlite3` and `zlib` besides the core: 17.0 MB, 4.6 MB in xz; `openssl`, for HTTPS and TLS, added
+The Linux archive holds only the `adminer` script in `adminer-<version>/`, so that users see what to
+start, and the same files as the exe in `adminer-<version>/lib/`, with the static `php/php` and its
+`php/license/` instead of the DLLs. It is unpacked once by the user, not on every start. The PHP is
+our own build, with only `session`, `mysqli`, `openssl`, `pgsql`, `sqlite3` and `zlib` besides the
+core: 17.0 MB, 4.6 MB in xz; `openssl`, for HTTPS and TLS, added
 88 kB in xz, as libpq links OpenSSL anyway. It reads the CA certificates from `/etc/ssl/cert.pem`
 or `/etc/ssl/certs/`, tried only on Ubuntu. Not `iconv`, which Adminer uses only for importing
 UTF-16 files: its GNU libiconv is LGPL, whose relinking condition a static binary would have to
@@ -84,7 +85,7 @@ build is UPX-packed, 13 MB in the archive and lacks `mysqli`, the *bulk* build i
 and rejected: it saves 9.4 MB on disk (6.4 MB binary) but adds 1.2 MB to the xz download,
 65 ms to each of the two PHP starts and 8.7 MB of memory to each process, as the unpacked copy is
 private memory. The archive is written with `PharData`, which sets the executable bit of `adminer`
-and `php/php` also on Windows, and compressed by the `xz` command, because PharData knows only gzip
+and `lib/php/php` also on Windows, and compressed by the `xz` command, because PharData knows only gzip
 and bzip2; xz makes 4.8 MB of what gzip makes 6.0 MB. On Windows `xz` is on the `PATH` only in Git
 Bash (`C:\Program Files\Git\ucrt64\bin`), not in PowerShell or cmd. Only x86_64 is built, as
 nothing here can build or run aarch64.

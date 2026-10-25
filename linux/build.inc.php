@@ -16,25 +16,26 @@ function build_linux(string $version, string $adminer, array $plugins): void {
 	// PharData because tar on Windows does not store the executable bit
 	$tar = new PharData($filename);
 	$dir = "adminer-$version";
+	$lib = "$dir/lib"; // only the script the user starts is in $dir
 	$files = array(
 		"$dir/adminer" => file_get_contents(__DIR__ . "/adminer"),
-		"$dir/php/php" => file_get_contents("$php/php"),
-		"$dir/adminer.php" => file_get_contents($adminer),
-		"$dir/launcher.php" => file_get_contents("$root/src/launcher.php"),
-		"$dir/server.inc.php" => file_get_contents("$root/src/server.inc.php"),
-		"$dir/www/index.php" => file_get_contents("$root/src/www/index.php"),
+		"$lib/php/php" => file_get_contents("$php/php"),
+		"$lib/adminer.php" => file_get_contents($adminer),
+		"$lib/launcher.php" => file_get_contents("$root/src/launcher.php"),
+		"$lib/server.inc.php" => file_get_contents("$root/src/server.inc.php"),
+		"$lib/www/index.php" => file_get_contents("$root/src/www/index.php"),
 	);
 	foreach ($plugins as $name => $content) {
-		$files["$dir/$name"] = $content;
+		$files["$lib/$name"] = $content;
 	}
 	foreach (glob("$php/license/*") as $license) {
-		$files["$dir/php/license/" . basename($license)] = file_get_contents($license);
+		$files["$lib/php/license/" . basename($license)] = file_get_contents($license);
 	}
 	foreach ($files as $name => $content) {
 		$tar->addFromString($name, $content);
 	}
 	$tar["$dir/adminer"]->chmod(0755);
-	$tar["$dir/php/php"]->chmod(0755);
+	$tar["$lib/php/php"]->chmod(0755);
 	unset($tar); // PharData keeps the file open
 	// xz makes 4.8 MB of what gzip makes 6.0 MB, PharData compresses only to gzip and bzip2
 	run(array('xz', '-f', $filename));
