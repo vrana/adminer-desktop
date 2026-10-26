@@ -13,7 +13,7 @@ platforms share `src/`.
 
 | Path | What it is |
 | --- | --- |
-| `src/launcher.php` | Run by the bundled PHP on Linux and macOS. Picks the port, starts `php -S` with `PHP_CLI_SERVER_WORKERS=4` (a page kept loading during a slow query in another one without them; Windows' `php -S` has no workers), opens an `--app` window of the default browser if it is Chrome, Edge, Brave or Chromium, otherwise of the first of them, or the default browser without them, waits for Enter. The default browser: NSWorkspace through `osascript -l JavaScript` on macOS (untried), `xdg-settings` and the Exec of its `.desktop` file on Linux. |
+| `src/launcher.php` | Run by the bundled PHP on Linux and macOS. Picks the port, starts `php -S` with `PHP_CLI_SERVER_WORKERS=4` (a page kept loading during a slow query in another one without them; Windows' `php -S` has no workers), opens an `--app` window of the default browser if it is Chrome, Edge, Brave or Chromium, otherwise of the first of them, or the default browser without them, waits for Enter. The default browser: NSWorkspace through `osascript -l JavaScript` on macOS, `xdg-settings` and the Exec of its `.desktop` file on Linux. |
 | `src/server.inc.php` | What `launcher.php` and `windows/app.php` share: the port, `port_state()`, `server_command()`, `extensions()`. |
 | `src/www/index.php` | The docroot's only script. Host check, then `include "../adminer.php"`. |
 | `build.php` | Downloads Adminer, calls the platform builds; the shared helpers (`cached_download()`, `github_asset()`, `static_php()`, …). `plugins()` takes login-ip and every plugin declaring `static $optional = true` from the release's `adminer-<version>.zip`, plus config.php and an `adminer-plugins.php` disabling the optional ones; users enable them on the Configuration page. It also takes the designs plugin with `designs/*/*.css` into `www/designs/`, where users choose one on the Configuration page. `drivers()` compiles the plugin drivers in `DRIVERS` (ClickHouse, Elasticsearch, Redis: those needing no extension missing in some bundled PHP) by `compile.php drivers` of the same zip in `dist/drivers/`, which writes only `drivers/`: the sources work only with the development version, and the compiled files are on adminer.org only after the desktop is built. With PHP 8.5 the 6.2.0 drivers came out identical to adminer.org's, so their checksums match those inlined in `adminer.php`. The zip of the tag would not do: it lacks the submodules with the JUSH modules and PhpShrink. |
@@ -100,10 +100,9 @@ again. arm64 code must be signed: Apple's linker signs it ad-hoc (`LC_CODE_SIGNA
 the binary afterwards, e.g. stripping it, would break the signature, and re-signing needs a Mac or
 `rcodesign`. The built PHP is 15.6 MB (before `openssl`), needs macOS 12 and makes a 6.8 MB zip;
 static-php-cli's prebuilt *common* build used first was 44.5 MB, a 15 MB zip, and had `pdo_mysql` but no `mysqli`.
-**Nothing of the macOS download has been run on a Mac yet**: only the zip's structure, permissions,
-plist and the binary's headers and signature were checked. Unverified: that the app opens Terminal
-as intended, whether Gatekeeper asks again for `adminer.command` inside an approved app, and the
-README's *Open Anyway* steps.
+Tried on a Mac: the README's *Open Anyway* steps let the app start, Gatekeeper does not ask again
+for `adminer.command` inside the approved app, the app opens Terminal with it, and Adminer opens in
+an `--app` window of the default browser.
 
 ## Build
 
