@@ -1,4 +1,4 @@
-# Builds adminer-VERSION.exe from this repository, so that SignPath can verify where the signed exe comes from
+# Builds adminer-VERSION-x64.exe from this repository, so that SignPath can verify where the signed exe comes from
 name: Build Windows
 on:
   workflow_dispatch:

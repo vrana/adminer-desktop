@@ -1,13 +1,13 @@
 # Adminer for Windows, Linux and macOS
 
 [Adminer](https://www.adminer.org/) with its own PHP, for people who don't have PHP or don't want
-to set up a web server: one `adminer.exe` of about 7 MB for Windows, a `.tar.xz` of about 5 MB for
+to set up a web server: one `adminer.exe` of about 7 MB for 64-bit Windows, a `.tar.xz` of about 5 MB for
 Linux, an `Adminer.app` in a `.zip` of about 7 MB for macOS. Start it and Adminer opens in a window
 of your browser.
 
 ## Run on Windows
 
-Download `adminer-<version>.exe` from the [releases](https://github.com/vrana/adminer-desktop/releases)
+Download `adminer-<version>-x64.exe` from the [releases](https://github.com/vrana/adminer-desktop/releases)
 and double-click it. Adminer opens in a window of its own without tabs and the address bar, shown
 by your default browser if it is Chrome, Edge, Brave or Chromium, otherwise by the first of them
 you have; Windows comes with Edge. Closing the window stops Adminer. Without them, Adminer opens in your default browser at
@@ -126,7 +126,7 @@ php build.php
 
 Downloads the latest Adminer release, the latest PHP 8.5 for Windows, the extensions and the tools
 (7-Zip's `7zr.exe` and installer stub, [rcedit](https://github.com/electron/rcedit)), caches them
-in `cache/` and writes `dist/adminer-<version>.exe`,
+in `cache/` and writes `dist/adminer-<version>-x64.exe`,
 `dist/adminer-<version>-linux-x86_64.tar.xz` and `dist/adminer-<version>-macos-arm64.zip`. The exe
 is built only on Windows, as the Visual C++ runtime is copied from the system, and the
 `.tar.xz` needs the `xz` command. Pass a version to build another Adminer release:

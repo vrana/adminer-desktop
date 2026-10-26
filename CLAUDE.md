@@ -19,7 +19,7 @@ platforms share `src/`.
 | `build.php` | Downloads Adminer, calls the platform builds; the shared helpers (`cached_download()`, `github_asset()`, `static_php()`, …). `plugins()` takes login-ip and every plugin declaring `static $optional = true` from the release's `adminer-<version>.zip`, plus config.php and an `adminer-plugins.php` disabling the optional ones; users enable them on the Configuration page. It also takes the designs plugin with `designs/*/*.css` into `www/designs/`, where users choose one on the Configuration page. `drivers()` compiles the plugin drivers in `DRIVERS` (ClickHouse, Elasticsearch, Redis: those needing no extension missing in some bundled PHP) by `compile.php drivers` of the same zip in `dist/drivers/`, which writes only `drivers/`: the sources work only with the development version, and the compiled files are on adminer.org only after the desktop is built. With PHP 8.5 the 6.2.0 drivers came out identical to adminer.org's, so their checksums match those inlined in `adminer.php`. The zip of the tag would not do: it lacks the submodules with the JUSH modules and PhpShrink. |
 | `build-php.sh` | Builds the static PHP with static-php-cli on x86_64 Linux or Apple Silicon macOS into `cache/static-php/<os>-<arch>/<version>/`; the latest release of `PHP_BRANCH` unless `cache/spc-downloads/` already holds one, delete it for a newer PHP. |
 | `.github/workflows/build-php.yml` | Runs `build-php.sh` on GitHub's `macos-15` runner, uploads the `php-macos-arm64` artifact. |
-| `windows/build.inc.php` | `build_windows()`: downloads PHP, extensions and tools, writes `dist/adminer-<version>.exe`. |
+| `windows/build.inc.php` | `build_windows()`: downloads PHP, extensions and tools, writes `dist/adminer-<version>-x64.exe`. |
 | `windows/config.txt` | 7-Zip installer config: `RunProgram` is `php-win.exe` with FFI running `app.php`. |
 | `windows/app.php` | Run by `php-win.exe` from `config.txt`: the server without a console, Adminer in an app window of Chrome, Edge, Brave or Chromium. Windows has no `launcher.php`, the browser variant of Linux and macOS. |
 | `windows/adminer.manifest` | `asInvoker`, see below. |
@@ -181,7 +181,7 @@ PHP had a release.
 built exe and run its server directly:
 
 ```bash
-7z x -o<scratch>/x dist/adminer-<version>.exe
+7z x -o<scratch>/x dist/adminer-<version>-x64.exe
 cd <scratch>/x && php/php.exe -n -d extension_dir=php/ext -d extension=mysqli -d extension=pgsql -d extension=sqlite3 -d extension=sqlsrv -d extension=oci8 -S 127.0.0.1:<port> -t www
 ```
 

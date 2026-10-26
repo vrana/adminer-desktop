@@ -1,7 +1,7 @@
 <?php
 // Windows download, included by build.php
 
-const PHP_BUILD = 'nts-vs17-x64';
+const PHP_BUILD = 'nts-vs17-x64'; // hence -x64 in the exe's name: 7zSD.sfx is 32-bit and unpacks also on 32-bit Windows, which cannot run this PHP
 const PHP_RELEASES = 'https://windows.php.net/downloads/releases/releases.json';
 // the extensions loaded by server.inc.php and the libraries they import
 const PHP_FILES = array(
@@ -29,7 +29,7 @@ const TOOLS = array(
 	'rcedit' => array('electron/rcedit', '~^rcedit-x64\.exe$~'),
 );
 
-/** Build dist/adminer-VERSION.exe, which shows Adminer in an app window
+/** Build dist/adminer-VERSION-x64.exe, which shows Adminer in an app window
 * @param string $adminer path to adminer.php
 * @param array<string, string> $plugins [path next to adminer.php => content]
 */
@@ -88,7 +88,7 @@ function build_windows(string $version, string $adminer, array $plugins): void {
 		'--set-version-string', 'FileDescription', 'Adminer',
 		'--set-version-string', 'ProductName', 'Adminer',
 		'--set-version-string', 'InternalName', 'adminer',
-		'--set-version-string', 'OriginalFilename', "adminer-$version.exe",
+		'--set-version-string', 'OriginalFilename', "adminer-$version-x64.exe",
 		'--set-version-string', 'CompanyName', 'Jakub Vrana',
 		'--set-version-string', 'LegalCopyright', 'Copyright 2007 Jakub Vrana',
 	));
@@ -98,7 +98,7 @@ function build_windows(string $version, string $adminer, array $plugins): void {
 	echo "Compressing dist/build/\n";
 	run(array($tools['7zr'], 'a', '-mx9', $archive, '.'), $build);
 
-	$exe = "$dist/adminer-$version.exe";
+	$exe = "$dist/adminer-$version-x64.exe";
 	echo "Writing $exe\n";
 	write_file($exe, file_get_contents($stub) . file_get_contents(__DIR__ . "/config.txt") . file_get_contents($archive));
 	unlink($stub);
