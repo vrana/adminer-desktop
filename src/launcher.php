@@ -30,7 +30,9 @@ $url = url($port);
 
 // the server logs every request, which only clutters the console
 $null = (PHP_OS_FAMILY == 'Windows' ? 'NUL' : '/dev/null');
-$server = proc_open(server_command(PHP_BINARY, $root, $port), array(STDIN, array('file', $null, 'w'), array('file', $null, 'w')), $pipes, $root);
+// several requests at once, e.g. Adminer's script=kill while the page it kills runs; php -S has no workers on Windows
+$environment = (PHP_OS_FAMILY == 'Windows' ? null : getenv() + array("PHP_CLI_SERVER_WORKERS" => 4));
+$server = proc_open(server_command(PHP_BINARY, $root, $port), array(STDIN, array('file', $null, 'w'), array('file', $null, 'w')), $pipes, $root, $environment);
 if (!$server) {
 	fail("Cannot start the server.");
 }
