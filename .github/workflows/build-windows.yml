@@ -1,4 +1,4 @@
-# Builds adminer-VERSION-x64.exe from this repository, so that SignPath can verify where the signed exe comes from
+# Builds adminer-VERSION-x64.exe from this repository and has SignPath sign it, which verifies that the exe comes from this workflow
 name: Build Windows
 on:
   workflow_dispatch:
@@ -6,7 +6,14 @@ on:
       version:
         description: Adminer version, the latest release if empty
         required: false
+      signing-policy:
+        description: SignPath signing policy, test-signing uses a test certificate
+        type: choice
+        options:
+          - test-signing
+          - release-signing
 permissions:
+  actions: read # SignPath downloads the unsigned artifact
   contents: read
 jobs:
   build:
@@ -15,7 +22,7 @@ jobs:
       run:
         shell: bash
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: shivammathur/setup-php@v2
         with:
           php-version: '8.5'
@@ -25,19 +32,24 @@ jobs:
         env:
           VERSION: ${{ inputs.version }} # passed through the environment, not pasted into the script
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         id: upload
         with:
           name: adminer-windows
           path: dist/adminer-*.exe
           retention-days: 7
-      # signing, once the SignPath Foundation accepts the project:
-      # - uses: signpath/github-action-submit-signing-request@v1
-      #   with:
-      #     api-token: ${{ secrets.SIGNPATH_API_TOKEN }}
-      #     organization-id: ...
-      #     project-slug: adminer-desktop
-      #     signing-policy-slug: release-signing
-      #     github-artifact-id: ${{ steps.upload.outputs.artifact-id }}
-      #     wait-for-completion: true
-      #     output-artifact-directory: dist/signed
+      - uses: signpath/github-action-submit-signing-request@v3
+        with:
+          api-token: ${{ secrets.SIGNPATH_API_TOKEN }}
+          organization-id: 104c5fa7-31f4-4ac7-97e8-8aeb98e55770
+          project-slug: adminer
+          signing-policy-slug: ${{ inputs.signing-policy }}
+          github-artifact-id: ${{ steps.upload.outputs.artifact-id }}
+          wait-for-completion: true
+          wait-for-completion-timeout-in-seconds: 3600 # release-signing waits for the manual approval
+          output-artifact-directory: dist/signed
+      - uses: actions/upload-artifact@v7
+        with:
+          name: adminer-windows-signed
+          path: dist/signed/adminer-*.exe
+          retention-days: 7

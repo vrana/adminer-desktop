@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- SignPath artifact configuration of the project, kept here for reference: the GitHub artifact is a zip with the one exe -->
+<artifact-configuration xmlns="http://signpath.io/artifact-configuration/v1">
+	<zip-file>
+		<pe-file path="adminer-*-x64.exe">
+			<authenticode-sign/>
+		</pe-file>
+	</zip-file>
+</artifact-configuration>
