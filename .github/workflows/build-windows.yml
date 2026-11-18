@@ -38,6 +38,8 @@ jobs:
           name: adminer-windows
           path: dist/adminer-*.exe
           retention-days: 7
+      - id: version # the artifact configuration checks the exe's product version against it
+        run: echo "version=$(basename dist/adminer-*-x64.exe -x64.exe | sed 's/^adminer-//')" >> "$GITHUB_OUTPUT"
       - uses: signpath/github-action-submit-signing-request@v3
         with:
           api-token: ${{ secrets.SIGNPATH_API_TOKEN }}
@@ -48,6 +50,8 @@ jobs:
           wait-for-completion: true
           wait-for-completion-timeout-in-seconds: 3600 # release-signing waits for the manual approval
           output-artifact-directory: dist/signed
+          parameters: |
+            version: ${{ toJSON(steps.version.outputs.version) }}
       - uses: actions/upload-artifact@v7
         with:
           name: adminer-windows-signed

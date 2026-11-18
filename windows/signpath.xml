@@ -1,8 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- SignPath artifact configuration of the project, kept here for reference: the GitHub artifact is a zip with the one exe -->
 <artifact-configuration xmlns="http://signpath.io/artifact-configuration/v1">
+	<parameters>
+		<parameter name="version" required="true"/>
+	</parameters>
 	<zip-file>
-		<pe-file path="adminer-*-x64.exe">
+		<!-- SignPath Foundation requires the product name to be the project's name and enforcing the product version -->
+		<pe-file path="adminer-${version}-x64.exe" product-name="Adminer" product-version="${version}">
 			<authenticode-sign/>
 		</pe-file>
 	</zip-file>
