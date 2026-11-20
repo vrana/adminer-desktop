@@ -87,7 +87,8 @@ and rejected: it saves 9.4 MB on disk (6.4 MB binary) but adds 1.2 MB to the xz 
 private memory. The archive is written with `PharData`, which sets the executable bit of `adminer`
 and `lib/php/php` also on Windows, and compressed by the `xz` command, because PharData knows only gzip
 and bzip2; xz makes 4.8 MB of what gzip makes 6.0 MB. On Windows `xz` is on the `PATH` only in Git
-Bash (`C:\Program Files\Git\ucrt64\bin`), not in PowerShell or cmd. Only x86_64 is built, as
+Bash (`C:\Program Files\Git\ucrt64\bin`), not in PowerShell or cmd, so the build finds it from
+`git --exec-path` (`ucrt64/libexec/git-core`) there. Only x86_64 is built, as
 nothing here can build or run aarch64.
 
 The macOS zip holds `Adminer.app/Contents/` with `Info.plist`, `MacOS/adminer` and the payload in

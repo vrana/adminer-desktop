@@ -38,6 +38,14 @@ function build_linux(string $version, string $adminer, array $plugins): void {
 	$tar["$lib/php/php"]->chmod(0755);
 	unset($tar); // PharData keeps the file open
 	// xz makes 4.8 MB of what gzip makes 6.0 MB, PharData compresses only to gzip and bzip2
-	run(array('xz', '-f', $filename));
+	$xz = 'xz';
+	if (PHP_OS_FAMILY == 'Windows') {
+		// Git for Windows has xz next to its git-core, on the PATH only in Git Bash
+		$xz = dirname(trim((string) shell_exec('git --exec-path')), 2) . '/bin/xz.exe';
+		if (!is_file($xz)) {
+			fail("Cannot find xz of Git for Windows at $xz.");
+		}
+	}
+	run(array($xz, '-f', $filename));
 	printf("%s.xz (%d kB)\n", $filename, round(filesize("$filename.xz") / 1024));
 }
