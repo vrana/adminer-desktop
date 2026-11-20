@@ -34,9 +34,9 @@ case "$spc" in
 	*.tar.gz) tar -xzf "$spc" ;;
 	*.exe) mv "$spc" spc.exe ;;
 esac
-./spc doctor --auto-fix
-./spc download --with-php="$branch" --for-extensions="$extensions" --prefer-pre-built
-./spc build "$extensions" --build-cli
+./spc doctor --auto-fix --no-ansi --no-motd
+./spc download --with-php="$branch" --for-extensions="$extensions" --prefer-pre-built --no-ansi --no-motd
+./spc build "$extensions" --build-cli --no-ansi --no-motd
 php=$(ls buildroot/bin/php buildroot/bin/php.exe 2>/dev/null | head -1)
 version=$("$php" -n -r 'echo PHP_VERSION;')
 target="$root/cache/static-php/$platform/$version"
